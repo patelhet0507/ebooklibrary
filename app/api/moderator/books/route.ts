@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma"
 import { config } from "@/lib/config"
 import { randomUUID } from "crypto"
-import { NextRequest } from "next/server"
+import { NextRequest, NextResponse } from "next/server"
 import { stringifyGenres } from "@/lib/utils"
 import { withAuth } from "@/lib/api-auth"
 
@@ -30,7 +30,7 @@ export async function GET(request: NextRequest) {
       orderBy: { created_at: "desc" },
     })
 
-    return Response.json(books)
+    return NextResponse.json(books)
   }, ["MODERATOR"])
 }
 
@@ -61,6 +61,6 @@ export async function POST(request: NextRequest) {
       include: { images: true },
     })
 
-    return Response.json(book, { status: 201 })
+    return NextResponse.json(book, { status: 201 })
   }, ["MODERATOR"])
 }
