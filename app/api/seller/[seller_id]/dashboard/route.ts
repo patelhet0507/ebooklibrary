@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma"
-import { NextRequest } from "next/server"
+import { NextRequest, NextResponse } from "next/server"
 import { withAuth } from "@/lib/api-auth"
 
 export async function GET(
@@ -9,7 +9,7 @@ export async function GET(
   return withAuth(async (session) => {
     const { seller_id } = await params
     if (session.role !== "SELLER" && session.userId !== seller_id) {
-      return Response.json({ detail: "Unauthorized" }, { status: 403 })
+      return NextResponse.json({ detail: "Unauthorized" }, { status: 403 });
     }
     const purchases: { total_amount: number }[] = await prisma.transaction.findMany({
       where: { book: { seller_id }, type: "PURCHASE" },
@@ -31,6 +31,6 @@ export async function GET(
         returned_at: null,
       },
     })
-    return Response.json({ total_earnings, total_sales, pending_fines, active_returns })
+    return NextResponse.json({ total_earnings, total_sales, pending_fines, active_returns });
   }, ["SELLER"])
 }
