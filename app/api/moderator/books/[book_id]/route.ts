@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma"
 import { config } from "@/lib/config"
-import { NextRequest } from "next/server"
+import { NextRequest, NextResponse } from "next/server"
 import { stringifyGenres } from "@/lib/utils"
 import { withAuth } from "@/lib/api-auth"
 
@@ -12,7 +12,7 @@ export async function PUT(
     const { book_id } = await params
     const existing = await prisma.book.findUnique({ where: { id: book_id } })
     if (!existing) {
-      return Response.json({ detail: "Book not found" }, { status: 404 })
+      return NextResponse.json({ detail: "Book not found" }, { status: 404 });
     }
 
     const body = await request.json()
@@ -34,7 +34,7 @@ export async function PUT(
       include: { images: true },
     })
 
-    return Response.json(book)
+    return NextResponse.json(book);
   }, ["MODERATOR"])
 }
 
@@ -45,6 +45,6 @@ export async function DELETE(
   return withAuth(async () => {
     const { book_id } = await params
     await prisma.book.delete({ where: { id: book_id } })
-    return new Response(null, { status: 204 })
+    return new NextResponse(null, { status: 204 });
   }, ["MODERATOR"])
 }
