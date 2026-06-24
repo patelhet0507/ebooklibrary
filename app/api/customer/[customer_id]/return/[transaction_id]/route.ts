@@ -1,13 +1,17 @@
 import { prisma } from "@/lib/prisma"
 import { sendReturnRequestNotification } from "@/lib/email"
 import { NextRequest } from "next/server"
+import { withAuth } from "@/lib/api-auth"
 
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ customer_id: string; transaction_id: string }> }
 ) {
-  try {
+  return withAuth(async (session) => {
     const { customer_id, transaction_id } = await params
+    if (session.role !== "CUSTOMER" && session.userId !== customer_id) {
+      return Response.json({ detail: "Unauthorized" }, { status: 403 })
+    }
 
     const transaction = await prisma.transaction.findFirst({
       where: { id: transaction_id, customer_id, type: "RENT", returned_at: null },
@@ -40,7 +44,5 @@ export async function POST(
 
     const { payment, ...txn } = updated
     return Response.json({ ...txn, payment_id: payment?.id ?? null })
-  } catch (error) {
-    return Response.json({ detail: "Internal server error" }, { status: 500 })
-  }
+  }, ["CUSTOMER"])
 }

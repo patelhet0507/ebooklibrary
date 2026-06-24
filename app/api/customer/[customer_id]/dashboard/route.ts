@@ -1,12 +1,16 @@
 import { prisma } from "@/lib/prisma"
 import { NextRequest } from "next/server"
+import { withAuth } from "@/lib/api-auth"
 
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ customer_id: string }> }
 ) {
-  try {
+  return withAuth(async (session) => {
     const { customer_id } = await params
+    if (session.role !== "CUSTOMER" && session.userId !== customer_id) {
+      return Response.json({ detail: "Unauthorized" }, { status: 403 })
+    }
 
     const user = await prisma.user.findUnique({ where: { id: customer_id } })
     if (!user) {
@@ -42,7 +46,5 @@ export async function GET(
     }
 
     return Response.json(dashboard)
-  } catch (error) {
-    return Response.json({ detail: "Internal server error" }, { status: 500 })
-  }
+  }, ["CUSTOMER"])
 }

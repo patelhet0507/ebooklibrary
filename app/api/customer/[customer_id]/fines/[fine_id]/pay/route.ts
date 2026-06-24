@@ -1,12 +1,16 @@
 import { prisma } from "@/lib/prisma"
 import { NextRequest } from "next/server"
+import { withAuth } from "@/lib/api-auth"
 
 export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ customer_id: string; fine_id: string }> }
 ) {
-  try {
+  return withAuth(async (session) => {
     const { customer_id, fine_id } = await params
+    if (session.role !== "CUSTOMER" && session.userId !== customer_id) {
+      return Response.json({ detail: "Unauthorized" }, { status: 403 })
+    }
 
     const fine = await prisma.fine.findUnique({ where: { id: fine_id } })
     if (!fine || fine.user_id !== customer_id) {
@@ -22,7 +26,5 @@ export async function PUT(
     })
 
     return Response.json(updated)
-  } catch (error) {
-    return Response.json({ detail: "Internal server error" }, { status: 500 })
-  }
+  }, ["CUSTOMER"])
 }

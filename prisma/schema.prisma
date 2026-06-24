@@ -28,6 +28,9 @@ model User {
   commissions  Commission[]
   payments     Payment[]
   reviews      Review[]
+  wishlist     Wishlist[]
+  coupons      CouponUsage[]
+  notifications Notification[]
 
   @@map("users")
 }
@@ -46,6 +49,8 @@ model Book {
   rental_price_per_day Float?
   stock             Int      @default(0)
   seller_id         String?
+  avg_rating        Float    @default(0)
+  review_count      Int      @default(0)
   created_at        DateTime @default(now())
   updated_at        DateTime @updatedAt
 
@@ -53,6 +58,7 @@ model Book {
   transactions Transaction[]
   reviews      Review[]
   images       BookImage[]
+  wishlist     Wishlist[]
 
   @@map("books")
 }
@@ -80,12 +86,15 @@ model Transaction {
   due_date            DateTime?
   returned_at         DateTime?
   return_requested_at DateTime?
+  coupon_id           String?
   created_at          DateTime @default(now())
 
-  book     Book      @relation(fields: [book_id], references: [id], onDelete: Cascade)
-  customer User      @relation(fields: [customer_id], references: [id], onDelete: Cascade)
-  fines    Fine[]
-  payment  Payment?
+  book           Book      @relation(fields: [book_id], references: [id], onDelete: Cascade)
+  customer       User      @relation(fields: [customer_id], references: [id], onDelete: Cascade)
+  fines          Fine[]
+  payment        Payment?
+  coupon         Coupon?   @relation(fields: [coupon_id], references: [id], onDelete: SetNull)
+  couponUsages   CouponUsage[]
 
   @@map("transactions")
 }
@@ -153,4 +162,80 @@ model Review {
   user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
 
   @@map("reviews")
+}
+
+model Wishlist {
+  id        String   @id @default(uuid())
+  user_id   String
+  book_id   String
+  created_at DateTime @default(now())
+
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  book Book @relation(fields: [book_id], references: [id], onDelete: Cascade)
+
+  @@unique([user_id, book_id])
+  @@map("wishlist")
+}
+
+model Coupon {
+  id              String   @id @default(uuid())
+  code            String   @unique
+  description     String?
+  discount_type   String   // "PERCENTAGE" | "FIXED"
+  discount_value  Float
+  min_order_amount Float   @default(0)
+  max_discount     Float?
+  usage_limit     Int      @default(1)
+  used_count      Int      @default(0)
+  valid_from      DateTime @default(now())
+  valid_until     DateTime?
+  is_active       Boolean  @default(true)
+  created_at      DateTime @default(now())
+  updated_at      DateTime @updatedAt
+
+  usages       CouponUsage[]
+  transactions Transaction[]
+
+  @@map("coupons")
+}
+
+model CouponUsage {
+  id        String   @id @default(uuid())
+  coupon_id String
+  user_id   String
+  transaction_id String?
+  created_at DateTime @default(now())
+
+  coupon Coupon @relation(fields: [coupon_id], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  transaction Transaction? @relation(fields: [transaction_id], references: [id], onDelete: SetNull)
+
+  @@unique([coupon_id, user_id])
+  @@map("coupon_usages")
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  user_id   String
+  type      String   // "DUE_DATE" | "NEW_RELEASE" | "RETURN_APPROVED" | "RETURN_REJECTED" | "FINE_CREATED" | "GENERAL"
+  title     String
+  message   String
+  data      String?  // JSON for additional data
+  is_read   Boolean  @default(false)
+  created_at DateTime @default(now())
+
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@map("notifications")
+}
+
+model AnalyticsEvent {
+  id        String   @id @default(uuid())
+  event_type String  // "VIEW" | "PURCHASE" | "RENT" | "SEARCH" | "WISHLIST_ADD" | "COUPON_USE"
+  user_id   String?
+  book_id   String?
+  data      String?  // JSON
+  created_at DateTime @default(now())
+
+  @@map("analytics_events")
 }

@@ -8,7 +8,7 @@ interface AuthContextType {
   setUser: (user: User | null) => void;
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, name: string, password: string, role: UserRole) => Promise<void>;
-  logout: () => void;
+  logout: () => Promise<void>;
   isLoading: boolean;
 }
 
@@ -19,12 +19,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const savedUser = localStorage.getItem("user");
-    if (savedUser) {
-      setUser(JSON.parse(savedUser));
-    }
-    setIsLoading(false);
+    checkAuth();
   }, []);
+
+  const checkAuth = async () => {
+    try {
+      const res = await fetch("/api/auth/session");
+      if (res.ok) {
+        const data = await res.json();
+        if (data.user) setUser(data.user);
+      }
+    } catch {
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const login = async (email: string, password: string) => {
     const res = await fetch("/api/auth/login", {
@@ -32,15 +41,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, password }),
     });
-    
     if (!res.ok) {
       const error = await res.json();
       throw new Error(error.detail || "Login failed");
     }
-    
     const userData = await res.json();
     setUser(userData);
-    localStorage.setItem("user", JSON.stringify(userData));
   };
 
   const register = async (email: string, name: string, password: string, role: UserRole) => {
@@ -49,20 +55,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, name, password, role }),
     });
-    
     if (!res.ok) {
       const error = await res.json();
       throw new Error(error.detail || "Registration failed");
     }
-    
     const userData = await res.json();
     setUser(userData);
-    localStorage.setItem("user", JSON.stringify(userData));
   };
 
-  const logout = () => {
+  const logout = async () => {
+    await fetch("/api/auth/logout", { method: "POST" });
     setUser(null);
-    localStorage.removeItem("user");
   };
 
   return (
