@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma"
-import { NextRequest } from "next/server"
+import { NextRequest, NextResponse } from "next/server"
 import { BookCreate } from "@/lib/api"
 import { randomUUID } from "crypto"
 import { stringifyGenres } from "@/lib/utils"
@@ -12,10 +12,10 @@ export async function GET(
   return withAuth(async (session) => {
     const { seller_id } = await params
     if (session.role !== "SELLER" && session.userId !== seller_id) {
-      return Response.json({ detail: "Unauthorized" }, { status: 403 })
+      return NextResponse.json({ detail: "Unauthorized" }, { status: 403 });
     }
     const books = await prisma.book.findMany({ where: { seller_id } })
-    return Response.json(books)
+    return NextResponse.json(books);
   }, ["SELLER", "MODERATOR"])
 }
 
@@ -27,7 +27,7 @@ export async function POST(
     try {
       const { seller_id } = await params
       if (session.role !== "SELLER" && session.userId !== seller_id) {
-        return Response.json({ detail: "Unauthorized" }, { status: 403 })
+        return NextResponse.json({ detail: "Unauthorized" }, { status: 403 });
       }
       const body: BookCreate = await request.json()
 
@@ -55,10 +55,10 @@ export async function POST(
           slug,
         },
       })
-      return Response.json(book, { status: 201 })
+      return NextResponse.json(book, { status: 201 });
     } catch (error) {
       const message = error instanceof Error ? error.message : "Failed to create book"
-      return Response.json({ detail: message }, { status: 500 })
+      return NextResponse.json({ detail: message }, { status: 500 });
     }
   }, ["SELLER"])
 }
