@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma"
 import { sendRentConfirmation } from "@/lib/email"
-import { NextRequest } from "next/server"
+import { NextRequest, NextResponse } from "next/server"
 import { withAuth } from "@/lib/api-auth"
 
 export async function POST(
@@ -10,7 +10,7 @@ export async function POST(
   return withAuth(async (session) => {
     const { customer_id } = await params
     if (session.role !== "CUSTOMER" && session.userId !== customer_id) {
-      return Response.json({ detail: "Unauthorized" }, { status: 403 })
+      return NextResponse.json({ detail: "Unauthorized" }, { status: 403 });
     }
 
     try {
@@ -18,18 +18,18 @@ export async function POST(
 
       const book = await prisma.book.findUnique({ where: { id: book_id } })
       if (!book) {
-        return Response.json({ detail: "Book not found" }, { status: 404 })
+        return NextResponse.json({ detail: "Book not found" }, { status: 404 });
       }
       if (book.stock < quantity) {
-        return Response.json({ detail: "Insufficient stock" }, { status: 400 })
+        return NextResponse.json({ detail: "Insufficient stock" }, { status: 400 });
       }
       if (!rental_days || rental_days < 1) {
-        return Response.json({ detail: "Rental days must be at least 1" }, { status: 400 })
+        return NextResponse.json({ detail: "Rental days must be at least 1" }, { status: 400 });
       }
 
       const customer = await prisma.user.findUnique({ where: { id: customer_id } })
       if (!customer) {
-        return Response.json({ detail: "Customer not found" }, { status: 404 })
+        return NextResponse.json({ detail: "Customer not found" }, { status: 404 });
       }
 
       const rental_price = book.rental_price_per_day ?? book.price * 0.1
@@ -55,9 +55,9 @@ export async function POST(
 
       sendRentConfirmation(customer.email, customer.name, book.title, total_amount, rental_days, due_date.toISOString())
 
-      return Response.json(transaction, { status: 201 })
+      return NextResponse.json(transaction, { status: 201 });
     } catch (error) {
-      return Response.json({ detail: "Internal server error" }, { status: 500 })
+      return NextResponse.json({ detail: "Internal server error" }, { status: 500 });
     }
   }, ["CUSTOMER"])
 }

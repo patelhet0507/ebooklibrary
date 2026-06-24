@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma"
 import { sendReturnRequestNotification } from "@/lib/email"
-import { NextRequest } from "next/server"
+import { NextRequest, NextResponse } from "next/server"
 import { withAuth } from "@/lib/api-auth"
 
 export async function POST(
@@ -10,7 +10,7 @@ export async function POST(
   return withAuth(async (session) => {
     const { customer_id, transaction_id } = await params
     if (session.role !== "CUSTOMER" && session.userId !== customer_id) {
-      return Response.json({ detail: "Unauthorized" }, { status: 403 })
+      return NextResponse.json({ detail: "Unauthorized" }, { status: 403 });
     }
 
     const transaction = await prisma.transaction.findFirst({
@@ -19,10 +19,10 @@ export async function POST(
     })
 
     if (!transaction) {
-      return Response.json({ detail: "Transaction not found" }, { status: 404 })
+      return NextResponse.json({ detail: "Transaction not found" }, { status: 404 });
     }
     if (transaction.return_requested_at) {
-      return Response.json({ detail: "Return already requested" }, { status: 400 })
+      return NextResponse.json({ detail: "Return already requested" }, { status: 400 });
     }
 
     const updated: { payment: { id: string } | null } = await prisma.transaction.update({
@@ -43,6 +43,6 @@ export async function POST(
     }
 
     const { payment, ...txn } = updated
-    return Response.json({ ...txn, payment_id: payment?.id ?? null })
+    return NextResponse.json({ ...txn, payment_id: payment?.id ?? null });
   }, ["CUSTOMER"])
 }

@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma"
-import { NextRequest } from "next/server"
+import { NextRequest, NextResponse } from "next/server"
 import { withAuth } from "@/lib/api-auth"
 
 export async function GET(
@@ -9,12 +9,12 @@ export async function GET(
   return withAuth(async (session) => {
     const { customer_id } = await params
     if (session.role !== "CUSTOMER" && session.userId !== customer_id) {
-      return Response.json({ detail: "Unauthorized" }, { status: 403 })
+      return NextResponse.json({ detail: "Unauthorized" }, { status: 403 });
     }
 
     const user = await prisma.user.findUnique({ where: { id: customer_id } })
     if (!user) {
-      return Response.json({ detail: "Customer not found" }, { status: 404 })
+      return NextResponse.json({ detail: "Customer not found" }, { status: 404 });
     }
 
     const purchaseAgg = await prisma.transaction.aggregate({
@@ -45,6 +45,6 @@ export async function GET(
       level: user.level,
     }
 
-    return Response.json(dashboard)
+    return NextResponse.json(dashboard);
   }, ["CUSTOMER"])
 }

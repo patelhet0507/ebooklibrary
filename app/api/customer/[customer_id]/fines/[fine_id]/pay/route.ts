@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma"
-import { NextRequest } from "next/server"
+import { NextRequest, NextResponse } from "next/server"
 import { withAuth } from "@/lib/api-auth"
 
 export async function PUT(
@@ -9,15 +9,15 @@ export async function PUT(
   return withAuth(async (session) => {
     const { customer_id, fine_id } = await params
     if (session.role !== "CUSTOMER" && session.userId !== customer_id) {
-      return Response.json({ detail: "Unauthorized" }, { status: 403 })
+      return NextResponse.json({ detail: "Unauthorized" }, { status: 403 });
     }
 
     const fine = await prisma.fine.findUnique({ where: { id: fine_id } })
     if (!fine || fine.user_id !== customer_id) {
-      return Response.json({ detail: "Fine not found" }, { status: 404 })
+      return NextResponse.json({ detail: "Fine not found" }, { status: 404 });
     }
     if (fine.status !== "PENDING") {
-      return Response.json({ detail: "Fine is not pending" }, { status: 400 })
+      return NextResponse.json({ detail: "Fine is not pending" }, { status: 400 });
     }
 
     const updated = await prisma.fine.update({
@@ -25,6 +25,6 @@ export async function PUT(
       data: { status: "PAID", paid_at: new Date() },
     })
 
-    return Response.json(updated)
+    return NextResponse.json(updated);
   }, ["CUSTOMER"])
 }

@@ -1,5 +1,5 @@
 import { getSession, JWTPayload } from "@/lib/auth";
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
 export async function withAuth(
   handler: (session: JWTPayload, request: Request) => Promise<NextResponse>,
@@ -12,7 +12,8 @@ export async function withAuth(
   if (allowedRoles && !allowedRoles.includes(session.role)) {
     return NextResponse.json({ detail: "Forbidden" }, { status: 403 });
   }
-  return handler(session, new Request(new URL(request.url), request));
+  const response = await handler(session, new Request(request));
+  return response;
 }
 
 export function authError(message: string, status: number = 400) {

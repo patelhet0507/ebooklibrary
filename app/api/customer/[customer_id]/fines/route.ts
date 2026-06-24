@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma"
-import { NextRequest } from "next/server"
+import { NextRequest, NextResponse } from "next/server"
 import { withAuth } from "@/lib/api-auth"
 
 export async function GET(
@@ -9,7 +9,7 @@ export async function GET(
   return withAuth(async (session) => {
     const { customer_id } = await params
     if (session.role !== "CUSTOMER" && session.userId !== customer_id) {
-      return Response.json({ detail: "Unauthorized" }, { status: 403 })
+      return NextResponse.json({ detail: "Unauthorized" }, { status: 403 });
     }
 
     const fines = await prisma.fine.findMany({
@@ -17,6 +17,6 @@ export async function GET(
       orderBy: { created_at: "desc" },
     })
 
-    return Response.json(fines)
+    return NextResponse.json(fines);
   }, ["CUSTOMER"])
 }
