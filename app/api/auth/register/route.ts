@@ -18,6 +18,6 @@ export async function POST(request: Request) {
     name: user.name,
     role: user.role as "SELLER" | "CUSTOMER" | "MODERATOR",
   });
-  setAuthCookie(token);
+  await setAuthCookie(token);
   return Response.json(userWithoutPassword, { status: 201 });
 }
