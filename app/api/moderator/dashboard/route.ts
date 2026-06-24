@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma"
 import { config } from "@/lib/config"
-import { NextRequest } from "next/server"
+import { NextRequest, NextResponse } from "next/server"
 import { withAuth } from "@/lib/api-auth"
 
 export async function GET() {
@@ -15,7 +15,7 @@ export async function GET() {
     const totalCustomers = await prisma.user.count({ where: { role: "CUSTOMER" } })
     const commissionAgg = await prisma.commission.aggregate({ _sum: { amount: true } })
 
-    return Response.json({
+    return NextResponse.json({
       total_earnings: earningsAgg._sum.total_amount || 0,
       total_sales: salesCount,
       pending_fines: pendingFinesAgg._sum.amount || 0,
