@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma"
 import { config } from "@/lib/config"
 import { sendReturnApprovedNotification, sendReturnRejectedNotification } from "@/lib/email"
-import { NextRequest } from "next/server"
+import { NextRequest, NextResponse } from "next/server"
 import { withAuth } from "@/lib/api-auth"
 
 export async function POST(
@@ -20,7 +20,7 @@ export async function POST(
     })
 
     if (!transaction) {
-      return Response.json({ detail: "Transaction not found" }, { status: 404 })
+      return NextResponse.json({ detail: "Transaction not found" }, { status: 404 });
     }
 
     const body = await request.json()
@@ -37,6 +37,6 @@ export async function POST(
       body.reason || "No reason provided"
     )
 
-    return Response.json({ message: "Return request rejected" })
+    return NextResponse.json({ message: "Return request rejected" });
   }, ["MODERATOR"])
 }
