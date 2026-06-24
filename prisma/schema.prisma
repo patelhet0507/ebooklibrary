@@ -1,0 +1,156 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  name      String
+  password  String
+  role      String
+  phone     String?
+  address   String?
+  city      String?
+  state     String?
+  pincode   String?
+  xp        Int      @default(0)
+  level     Int      @default(1)
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  books        Book[]
+  transactions Transaction[]
+  fines        Fine[]
+  commissions  Commission[]
+  payments     Payment[]
+  reviews      Review[]
+
+  @@map("users")
+}
+
+model Book {
+  id                String   @id @default(uuid())
+  title             String
+  author            String
+  isbn              String?  @unique
+  slug              String?  @unique
+  description       String?
+  language          String?
+  genre            String?
+  cover_image       String?
+  price             Float
+  rental_price_per_day Float?
+  stock             Int      @default(0)
+  seller_id         String?
+  created_at        DateTime @default(now())
+  updated_at        DateTime @updatedAt
+
+  seller       User?        @relation(fields: [seller_id], references: [id], onDelete: Cascade)
+  transactions Transaction[]
+  reviews      Review[]
+  images       BookImage[]
+
+  @@map("books")
+}
+
+model BookImage {
+  id         String   @id @default(uuid())
+  book_id    String
+  url        String
+  is_primary Boolean  @default(false)
+  created_at DateTime @default(now())
+
+  book Book @relation(fields: [book_id], references: [id], onDelete: Cascade)
+
+  @@map("book_images")
+}
+
+model Transaction {
+  id                  String   @id @default(uuid())
+  book_id             String
+  customer_id         String
+  type                String
+  quantity            Int      @default(1)
+  rental_days         Int?
+  total_amount        Float
+  due_date            DateTime?
+  returned_at         DateTime?
+  return_requested_at DateTime?
+  created_at          DateTime @default(now())
+
+  book     Book      @relation(fields: [book_id], references: [id], onDelete: Cascade)
+  customer User      @relation(fields: [customer_id], references: [id], onDelete: Cascade)
+  fines    Fine[]
+  payment  Payment?
+
+  @@map("transactions")
+}
+
+model Fine {
+  id             String    @id @default(uuid())
+  transaction_id String
+  user_id        String
+  amount         Float
+  days_late      Int
+  status         String    @default("PENDING")
+  created_at     DateTime  @default(now())
+  paid_at        DateTime?
+
+  transaction Transaction @relation(fields: [transaction_id], references: [id], onDelete: Cascade)
+  user        User        @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@map("fines")
+}
+
+model Commission {
+  id          String   @id @default(uuid())
+  seller_id   String
+  amount      Float
+  percentage  Float
+  description String?
+  created_at  DateTime @default(now())
+
+  seller User @relation(fields: [seller_id], references: [id], onDelete: Cascade)
+
+  @@map("commissions")
+}
+
+model Payment {
+  id               String   @id @default(uuid())
+  transaction_id   String   @unique
+  user_id          String
+  method           String
+  amount           Float
+  status           String   @default("PENDING")
+  upi_id           String?
+  bank_name        String?
+  account_number   String?
+  ifsc_code        String?
+  delivery_name    String?
+  delivery_phone   String?
+  delivery_address String?
+  created_at       DateTime @default(now())
+
+  transaction Transaction @relation(fields: [transaction_id], references: [id], onDelete: Cascade)
+  user        User        @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@map("payments")
+}
+
+model Review {
+  id         String   @id @default(uuid())
+  book_id    String
+  user_id    String
+  rating     Int
+  comment    String?
+  created_at DateTime @default(now())
+
+  book Book @relation(fields: [book_id], references: [id], onDelete: Cascade)
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@map("reviews")
+}
