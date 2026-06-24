@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma"
-import { NextRequest } from "next/server"
+import { NextRequest, NextResponse } from "next/server"
 import { BookUpdate } from "@/lib/api"
 import { stringifyGenres } from "@/lib/utils"
 import { withAuth } from "@/lib/api-auth"
@@ -11,11 +11,11 @@ export async function PUT(
   return withAuth(async (session) => {
     const { seller_id, book_id } = await params
     if (session.role !== "SELLER" && session.userId !== seller_id) {
-      return Response.json({ detail: "Unauthorized" }, { status: 403 })
+      return NextResponse.json({ detail: "Unauthorized" }, { status: 403 });
     }
     const book = await prisma.book.findUnique({ where: { id: book_id } })
-    if (!book) return Response.json({ detail: "Book not found" }, { status: 404 })
-    if (book.seller_id !== seller_id) return Response.json({ detail: "Forbidden" }, { status: 403 })
+    if (!book) return NextResponse.json({ detail: "Book not found" }, { status: 404 });
+    if (book.seller_id !== seller_id) return NextResponse.json({ detail: "Forbidden" }, { status: 403 });
     const body: BookUpdate = await request.json()
     const updated = await prisma.book.update({
       where: { id: book_id },
@@ -35,7 +35,7 @@ export async function PUT(
           : undefined,
       },
     })
-    return Response.json(updated)
+    return NextResponse.json(updated);
   }, ["SELLER"])
 }
 
@@ -46,12 +46,12 @@ export async function DELETE(
   return withAuth(async (session) => {
     const { seller_id, book_id } = await params
     if (session.role !== "SELLER" && session.userId !== seller_id) {
-      return Response.json({ detail: "Unauthorized" }, { status: 403 })
+      return NextResponse.json({ detail: "Unauthorized" }, { status: 403 });
     }
     const book = await prisma.book.findUnique({ where: { id: book_id } })
-    if (!book) return Response.json({ detail: "Book not found" }, { status: 404 })
-    if (book.seller_id !== seller_id) return Response.json({ detail: "Forbidden" }, { status: 403 })
+    if (!book) return NextResponse.json({ detail: "Book not found" }, { status: 404 });
+    if (book.seller_id !== seller_id) return NextResponse.json({ detail: "Forbidden" }, { status: 403 });
     await prisma.book.delete({ where: { id: book_id } })
-    return new Response(null, { status: 204 })
+    return new NextResponse(null, { status: 204 });
   }, ["SELLER"])
 }
