@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma"
 import { config } from "@/lib/config"
 import { sendReturnApprovedNotification } from "@/lib/email"
-import { NextRequest } from "next/server"
+import { NextRequest, NextResponse } from "next/server"
 import { randomUUID } from "crypto"
 import { withAuth } from "@/lib/api-auth"
 
@@ -9,10 +9,10 @@ export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ seller_id: string; transaction_id: string }> }
 ) {
-  return withAuth(async (session) => {
+  return withAuth(async (session, req) => {
     const { seller_id, transaction_id } = await params
     if (session.role !== "SELLER" && session.userId !== seller_id) {
-      return Response.json({ detail: "Unauthorized" }, { status: 403 })
+      return NextResponse.json({ detail: "Unauthorized" }, { status: 403 })
     }
     const transaction = await prisma.transaction.findFirst({
       where: {
@@ -27,7 +27,7 @@ export async function POST(
         customer: true,
       },
     })
-    if (!transaction) return Response.json({ detail: "Return request not found" }, { status: 404 })
+    if (!transaction) return NextResponse.json({ detail: "Return request not found" }, { status: 404 })
     const now = new Date()
     const updated: { payment: { id: string } | null } = await prisma.transaction.update({
       where: { id: transaction_id },
@@ -60,6 +60,6 @@ export async function POST(
     sendReturnApprovedNotification(transaction.customer.email, transaction.customer.name, transaction.book.title, fineAmount)
 
     const { payment: p, ...txn } = updated
-    return Response.json({ ...txn, payment_id: p?.id ?? null })
-  }, ["SELLER"])
+    return NextResponse.json({ ...txn, payment_id: p?.id ?? null })
+  }, request, ["SELLER"])
 }

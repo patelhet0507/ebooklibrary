@@ -1,15 +1,15 @@
 import { prisma } from "@/lib/prisma"
-import { NextRequest } from "next/server"
+import { NextRequest, NextResponse } from "next/server"
 import { withAuth } from "@/lib/api-auth"
 
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ seller_id: string }> }
 ) {
-  return withAuth(async (session) => {
+  return withAuth(async (session, req) => {
     const { seller_id } = await params
     if (session.role !== "SELLER" && session.userId !== seller_id) {
-      return Response.json({ detail: "Unauthorized" }, { status: 403 })
+      return NextResponse.json({ detail: "Unauthorized" }, { status: 403 })
     }
     type ReturnRequestRow = {
       id: string; book_id: string; customer_id: string; type: string;
@@ -45,6 +45,6 @@ export async function GET(
       return_requested_at: t.return_requested_at,
       created_at: t.created_at,
     }))
-    return Response.json(result)
-  }, ["SELLER"])
+    return NextResponse.json(result)
+  }, request, ["SELLER"])
 }

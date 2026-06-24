@@ -3,8 +3,8 @@ import { config } from "@/lib/config"
 import { NextRequest, NextResponse } from "next/server"
 import { withAuth } from "@/lib/api-auth"
 
-export async function GET() {
-  return withAuth(async () => {
+export async function GET(request: NextRequest) {
+  return withAuth(async (session, req) => {
     type TxnWithRelations = {
       id: string; book_id: string; customer_id: string; type: string;
       quantity: number; total_amount: number; rental_days: number | null;
@@ -42,5 +42,5 @@ export async function GET() {
     }))
 
     return NextResponse.json(result);
-  }, ["MODERATOR"])
+  }, request, ["MODERATOR"])
 }

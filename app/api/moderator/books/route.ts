@@ -6,8 +6,8 @@ import { stringifyGenres } from "@/lib/utils"
 import { withAuth } from "@/lib/api-auth"
 
 export async function GET(request: NextRequest) {
-  return withAuth(async () => {
-    const searchParams = request.nextUrl.searchParams
+  return withAuth(async (session, req) => {
+    const searchParams = req.nextUrl.searchParams
     const search = searchParams.get("search")
     const genre = searchParams.get("genre")
     const language = searchParams.get("language")
@@ -31,12 +31,12 @@ export async function GET(request: NextRequest) {
     })
 
     return NextResponse.json(books)
-  }, ["MODERATOR"])
+  }, request, ["MODERATOR"])
 }
 
 export async function POST(request: NextRequest) {
-  return withAuth(async () => {
-    const body = await request.json()
+  return withAuth(async (session, req) => {
+    const body = await req.json()
     const slug = body.title
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, "-")
@@ -62,5 +62,5 @@ export async function POST(request: NextRequest) {
     })
 
     return NextResponse.json(book, { status: 201 })
-  }, ["MODERATOR"])
+  }, request, ["MODERATOR"])
 }

@@ -6,7 +6,7 @@ export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ seller_id: string }> }
 ) {
-  return withAuth(async (session) => {
+  return withAuth(async (session, req) => {
     const { seller_id } = await params
     if (session.role !== "SELLER" && session.userId !== seller_id) {
       return NextResponse.json({ detail: "Unauthorized" }, { status: 403 });
@@ -32,5 +32,5 @@ export async function GET(
       },
     })
     return NextResponse.json({ total_earnings, total_sales, pending_fines, active_returns });
-  }, ["SELLER"])
+  }, request, ["SELLER"])
 }

@@ -1,17 +1,17 @@
 import { prisma } from "@/lib/prisma"
-import { NextRequest } from "next/server"
+import { NextRequest, NextResponse } from "next/server"
 import { withAuth } from "@/lib/api-auth"
 
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ seller_id: string }> }
 ) {
-  return withAuth(async (session) => {
+  return withAuth(async (session, req) => {
     const { seller_id } = await params
     if (session.role !== "SELLER" && session.userId !== seller_id) {
-      return Response.json({ detail: "Unauthorized" }, { status: 403 })
+      return NextResponse.json({ detail: "Unauthorized" }, { status: 403 })
     }
-    const period = request.nextUrl.searchParams.get("period") || "week"
+    const period = req.nextUrl.searchParams.get("period") || "week"
     const now = new Date()
     let startDate: Date
     if (period === "day") {
@@ -39,11 +39,11 @@ export async function GET(
       _sum: { amount: true },
     })
     const earnings = purchases.reduce((sum, t) => sum + t.total_amount, 0)
-    return Response.json([{
+    return NextResponse.json([{
       period,
       earnings,
       sales_count: purchases.length,
       commission_paid: commissions._sum.amount || 0,
     }])
-  }, ["SELLER"])
+  }, request, ["SELLER"])
 }

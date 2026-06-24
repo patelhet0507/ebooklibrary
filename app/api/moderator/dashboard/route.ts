@@ -3,8 +3,8 @@ import { config } from "@/lib/config"
 import { NextRequest, NextResponse } from "next/server"
 import { withAuth } from "@/lib/api-auth"
 
-export async function GET() {
-  return withAuth(async () => {
+export async function GET(request: NextRequest) {
+  return withAuth(async (session, req) => {
     const earningsAgg = await prisma.transaction.aggregate({ where: { type: "PURCHASE" }, _sum: { total_amount: true } })
     const salesCount = await prisma.transaction.count({ where: { type: "PURCHASE" } })
     const pendingFinesAgg = await prisma.fine.aggregate({ where: { status: "PENDING" }, _sum: { amount: true } })
@@ -26,5 +26,5 @@ export async function GET() {
       total_customers: totalCustomers,
       total_commission: commissionAgg._sum.amount || 0,
     })
-  }, ["MODERATOR"])
+  }, request, ["MODERATOR"])
 }

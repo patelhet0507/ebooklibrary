@@ -8,7 +8,7 @@ export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ transaction_id: string }> }
 ) {
-  return withAuth(async () => {
+  return withAuth(async (session, req) => {
     const { transaction_id } = await params
 
     const transaction = await prisma.transaction.findUnique({
@@ -67,5 +67,5 @@ export async function POST(
 
     const { payment: p, ...txn } = updated
     return NextResponse.json({ ...txn, payment_id: p?.id ?? null });
-  }, ["MODERATOR"])
+  }, request, ["MODERATOR"])
 }

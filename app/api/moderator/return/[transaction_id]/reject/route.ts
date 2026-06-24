@@ -8,7 +8,7 @@ export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ transaction_id: string }> }
 ) {
-  return withAuth(async () => {
+  return withAuth(async (session, req) => {
     const { transaction_id } = await params
 
     const transaction = await prisma.transaction.findUnique({
@@ -23,7 +23,7 @@ export async function POST(
       return NextResponse.json({ detail: "Transaction not found" }, { status: 404 });
     }
 
-    const body = await request.json()
+    const body = await req.json()
 
     await prisma.transaction.update({
       where: { id: transaction_id },
@@ -38,5 +38,5 @@ export async function POST(
     )
 
     return NextResponse.json({ message: "Return request rejected" });
-  }, ["MODERATOR"])
+  }, request, ["MODERATOR"])
 }

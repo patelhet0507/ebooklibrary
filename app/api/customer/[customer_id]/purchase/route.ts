@@ -8,14 +8,14 @@ export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ customer_id: string }> }
 ) {
-  return withAuth(async (session) => {
+  return withAuth(async (session, req) => {
     const { customer_id } = await params
     if (session.role !== "CUSTOMER" && session.userId !== customer_id) {
       return NextResponse.json({ detail: "Unauthorized" }, { status: 403 });
     }
 
     try {
-      const { book_id, quantity } = await request.json()
+      const { book_id, quantity } = await req.json()
 
       const book = await prisma.book.findUnique({ where: { id: book_id } })
       if (!book) {
@@ -66,5 +66,5 @@ export async function POST(
     } catch (error) {
       return NextResponse.json({ detail: "Internal server error" }, { status: 500 });
     }
-  }, ["CUSTOMER"])
+  }, request, ["CUSTOMER"])
 }

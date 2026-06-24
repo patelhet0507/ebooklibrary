@@ -1,16 +1,16 @@
 import { prisma } from "@/lib/prisma"
 import { sendReturnRejectedNotification } from "@/lib/email"
-import { NextRequest } from "next/server"
+import { NextRequest, NextResponse } from "next/server"
 import { withAuth } from "@/lib/api-auth"
 
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ seller_id: string; transaction_id: string }> }
 ) {
-  return withAuth(async (session) => {
+  return withAuth(async (session, req) => {
     const { seller_id, transaction_id } = await params
     if (session.role !== "SELLER" && session.userId !== seller_id) {
-      return Response.json({ detail: "Unauthorized" }, { status: 403 })
+      return NextResponse.json({ detail: "Unauthorized" }, { status: 403 })
     }
     const transaction = await prisma.transaction.findFirst({
       where: {
@@ -25,13 +25,13 @@ export async function POST(
         customer: true,
       },
     })
-    if (!transaction) return Response.json({ detail: "Return request not found" }, { status: 404 })
-    const { reason } = await request.json()
+    if (!transaction) return NextResponse.json({ detail: "Return request not found" }, { status: 404 })
+    const { reason } = await req.json()
     await prisma.transaction.update({
       where: { id: transaction_id },
       data: { return_requested_at: null },
     })
     sendReturnRejectedNotification(transaction.customer.email, transaction.customer.name, transaction.book.title, reason || "No reason provided")
-    return Response.json({ message: "Return request rejected" })
-  }, ["SELLER"])
+    return NextResponse.json({ message: "Return request rejected" })
+  }, request, ["SELLER"])
 }

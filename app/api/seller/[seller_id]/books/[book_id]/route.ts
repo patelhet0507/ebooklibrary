@@ -8,7 +8,7 @@ export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ seller_id: string; book_id: string }> }
 ) {
-  return withAuth(async (session) => {
+  return withAuth(async (session, req) => {
     const { seller_id, book_id } = await params
     if (session.role !== "SELLER" && session.userId !== seller_id) {
       return NextResponse.json({ detail: "Unauthorized" }, { status: 403 });
@@ -16,7 +16,7 @@ export async function PUT(
     const book = await prisma.book.findUnique({ where: { id: book_id } })
     if (!book) return NextResponse.json({ detail: "Book not found" }, { status: 404 });
     if (book.seller_id !== seller_id) return NextResponse.json({ detail: "Forbidden" }, { status: 403 });
-    const body: BookUpdate = await request.json()
+    const body: BookUpdate = await req.json()
     const updated = await prisma.book.update({
       where: { id: book_id },
       data: {
@@ -36,14 +36,14 @@ export async function PUT(
       },
     })
     return NextResponse.json(updated);
-  }, ["SELLER"])
+  }, request, ["SELLER"])
 }
 
 export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ seller_id: string; book_id: string }> }
 ) {
-  return withAuth(async (session) => {
+  return withAuth(async (session, req) => {
     const { seller_id, book_id } = await params
     if (session.role !== "SELLER" && session.userId !== seller_id) {
       return NextResponse.json({ detail: "Unauthorized" }, { status: 403 });
@@ -53,5 +53,5 @@ export async function DELETE(
     if (book.seller_id !== seller_id) return NextResponse.json({ detail: "Forbidden" }, { status: 403 });
     await prisma.book.delete({ where: { id: book_id } })
     return new NextResponse(null, { status: 204 });
-  }, ["SELLER"])
+  }, request, ["SELLER"])
 }

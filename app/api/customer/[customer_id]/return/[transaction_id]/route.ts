@@ -7,7 +7,7 @@ export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ customer_id: string; transaction_id: string }> }
 ) {
-  return withAuth(async (session) => {
+  return withAuth(async (session, req) => {
     const { customer_id, transaction_id } = await params
     if (session.role !== "CUSTOMER" && session.userId !== customer_id) {
       return NextResponse.json({ detail: "Unauthorized" }, { status: 403 });
@@ -44,5 +44,5 @@ export async function POST(
 
     const { payment, ...txn } = updated
     return NextResponse.json({ ...txn, payment_id: payment?.id ?? null });
-  }, ["CUSTOMER"])
+  }, request, ["CUSTOMER"])
 }

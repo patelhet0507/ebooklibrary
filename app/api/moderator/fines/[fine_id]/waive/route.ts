@@ -7,7 +7,7 @@ export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ fine_id: string }> }
 ) {
-  return withAuth(async () => {
+  return withAuth(async (session, req) => {
     const { fine_id } = await params
 
     const fine = await prisma.fine.findUnique({ where: { id: fine_id } })
@@ -25,5 +25,5 @@ export async function PUT(
     })
 
     return NextResponse.json({ message: "Fine waived successfully" });
-  }, ["MODERATOR"])
+  }, request, ["MODERATOR"])
 }

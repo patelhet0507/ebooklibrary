@@ -46,8 +46,9 @@ export async function requireAuth(allowedRoles?: string[]): Promise<JWTPayload> 
   return session;
 }
 
-export function setAuthCookie(token: string) {
-  cookies().set(TOKEN_NAME, token, {
+export async function setAuthCookie(token: string) {
+  const cookieStore = await cookies();
+  cookieStore.set(TOKEN_NAME, token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
@@ -56,6 +57,7 @@ export function setAuthCookie(token: string) {
   });
 }
 
-export function clearAuthCookie() {
-  cookies().delete(TOKEN_NAME);
+export async function clearAuthCookie() {
+  const cookieStore = await cookies();
+  cookieStore.delete(TOKEN_NAME);
 }

@@ -248,6 +248,7 @@ export interface RentCreate {
 
 async function fetchApi<T>(endpoint: string, options?: RequestInit): Promise<T> {
   const res = await fetch(`${API_BASE_URL}${endpoint}`, {
+    credentials: "include",
     headers: {
       "Content-Type": "application/json",
       ...options?.headers,
@@ -257,7 +258,9 @@ async function fetchApi<T>(endpoint: string, options?: RequestInit): Promise<T> 
 
   if (!res.ok) {
     const error = await res.json().catch(() => ({ detail: "An error occurred" }));
-    throw new Error(error.detail || "An error occurred");
+    const message = error.detail || error.message || `HTTP ${res.status}: ${res.statusText}`;
+    console.error("API Error:", { status: res.status, error, endpoint });
+    throw new Error(message);
   }
 
   if (res.status === 204) {

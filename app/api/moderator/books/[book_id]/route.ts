@@ -8,14 +8,14 @@ export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ book_id: string }> }
 ) {
-  return withAuth(async () => {
+  return withAuth(async (session, req) => {
     const { book_id } = await params
     const existing = await prisma.book.findUnique({ where: { id: book_id } })
     if (!existing) {
       return NextResponse.json({ detail: "Book not found" }, { status: 404 });
     }
 
-    const body = await request.json()
+    const body = await req.json()
     const data: Record<string, unknown> = {}
     if (body.title !== undefined) data.title = body.title
     if (body.author !== undefined) data.author = body.author
@@ -35,16 +35,16 @@ export async function PUT(
     })
 
     return NextResponse.json(book);
-  }, ["MODERATOR"])
+  }, request, ["MODERATOR"])
 }
 
 export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ book_id: string }> }
 ) {
-  return withAuth(async () => {
+  return withAuth(async (session, req) => {
     const { book_id } = await params
     await prisma.book.delete({ where: { id: book_id } })
     return new NextResponse(null, { status: 204 });
-  }, ["MODERATOR"])
+  }, request, ["MODERATOR"])
 }
