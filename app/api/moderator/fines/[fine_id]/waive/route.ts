@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma"
 import { config } from "@/lib/config"
-import { NextRequest } from "next/server"
+import { NextRequest, NextResponse } from "next/server"
 import { withAuth } from "@/lib/api-auth"
 
 export async function PUT(
@@ -12,11 +12,11 @@ export async function PUT(
 
     const fine = await prisma.fine.findUnique({ where: { id: fine_id } })
     if (!fine) {
-      return Response.json({ detail: "Fine not found" }, { status: 404 })
+      return NextResponse.json({ detail: "Fine not found" }, { status: 404 });
     }
 
     if (fine.status !== "PENDING") {
-      return Response.json({ detail: "Fine has already been processed" }, { status: 400 })
+      return NextResponse.json({ detail: "Fine has already been processed" }, { status: 400 });
     }
 
     await prisma.fine.update({
@@ -24,6 +24,6 @@ export async function PUT(
       data: { status: "WAIVED" },
     })
 
-    return Response.json({ message: "Fine waived successfully" })
+    return NextResponse.json({ message: "Fine waived successfully" });
   }, ["MODERATOR"])
 }
