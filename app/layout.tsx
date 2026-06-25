@@ -13,6 +13,7 @@ const plusJakartaSans = Plus_Jakarta_Sans({
 export const metadata: Metadata = {
   title: "E-Book Library",
   description: "Multi-role digital book library",
+  icons: { icon: "/logo.png" },
 };
 
 export default function RootLayout({
