@@ -320,6 +320,8 @@ export const api = {
     get: (id: string) => fetchApi<Book>(`/books/${id}`),
     getBySlug: (slug: string) => fetchApi<Book>(`/books/slug/${slug}`),
     getSeller: (bookId: string) => fetchApi<SellerContact>(`/books/${bookId}/seller`),
+    contactSeller: (bookId: string, data: { message: string; customer_name: string; customer_phone?: string; customer_address?: string }) =>
+      fetchApi<{ success: boolean }>(`/books/${bookId}/contact`, { method: "POST", body: JSON.stringify(data) }),
     getGenres: () => fetchApi<string[]>("/books/genres"),
     getLanguages: () => fetchApi<string[]>("/books/languages"),
     getImages: (bookId: string) => fetchApi<BookImage[]>(`/books/${bookId}/images`),

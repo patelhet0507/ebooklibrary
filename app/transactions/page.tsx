@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useAuth } from "@/lib/auth-context";
-import { api, Transaction, SellerContact } from "@/lib/api";
+import { api, Transaction } from "@/lib/api";
 import Modal from "@/app/components/Modal";
 
 export default function CustomerTransactions() {
@@ -12,7 +12,7 @@ export default function CustomerTransactions() {
   const [requesting, setRequesting] = useState<string | null>(null);
   const [confirmRequest, setConfirmRequest] = useState<string | null>(null);
   const [modalMessage, setModalMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
-  const [sellerContact, setSellerContact] = useState<{ bookId: string; info: SellerContact | null; loading: boolean } | null>(null);
+  const [contactModal, setContactModal] = useState<{ bookId: string; bookTitle: string; message: string; sending: boolean } | null>(null);
   const [searchFilters, setSearchFilters] = useState({
   startDate: "",
   endDate: "",
@@ -83,13 +83,31 @@ export default function CustomerTransactions() {
     }
   };
 
-  const openSellerContact = async (bookId: string) => {
-    setSellerContact({ bookId, info: null, loading: true });
+  const openContactModal = async (bookId: string) => {
     try {
-      const info = await api.books.getSeller(bookId);
-      setSellerContact({ bookId, info, loading: false });
+      const book = await api.books.get(bookId);
+      setContactModal({ bookId, bookTitle: book.title, message: "", sending: false });
     } catch {
-      setSellerContact({ bookId, info: null, loading: false });
+      setModalMessage({ type: "error", text: "Could not load book details" });
+    }
+  };
+
+  const handleSendContact = async () => {
+    if (!user || !contactModal || !contactModal.message.trim()) return;
+    setContactModal({ ...contactModal, sending: true });
+    try {
+      const address = [user.address, user.city, user.state, user.pincode].filter(Boolean).join(", ");
+      await api.books.contactSeller(contactModal.bookId, {
+        message: contactModal.message,
+        customer_name: user.name,
+        customer_phone: user.phone,
+        customer_address: address || undefined,
+      });
+      setContactModal(null);
+      setModalMessage({ type: "success", text: "Your message has been sent to the seller!" });
+    } catch (err) {
+      setModalMessage({ type: "error", text: err instanceof Error ? err.message : "Failed to send message" });
+      setContactModal({ ...contactModal, sending: false });
     }
   };
 
@@ -241,7 +259,7 @@ export default function CustomerTransactions() {
                           Invoice
                         </a>
                       )}
-                      <button onClick={() => openSellerContact(transaction.book_id)} className="btn btn-ghost text-sm text-secondary">
+                      <button onClick={() => openContactModal(transaction.book_id)} className="btn btn-ghost text-sm text-secondary">
                         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                         </svg>
@@ -266,23 +284,31 @@ export default function CustomerTransactions() {
         </div>
       </Modal>
 
-      {/* Seller Contact Modal */}
-      <Modal isOpen={!!sellerContact} onClose={() => setSellerContact(null)} title="Contact Seller">
-        {sellerContact?.loading ? (
-          <div className="flex justify-center py-8"><div className="spinner" /></div>
-        ) : sellerContact?.info ? (
+      {/* Contact Seller Modal */}
+      <Modal isOpen={!!contactModal} onClose={() => setContactModal(null)} title={`Contact Seller - ${contactModal?.bookTitle || ""}`}>
+        {contactModal && (
           <div className="space-y-4">
-            <p className="text-secondary">You can contact the seller of this book at:</p>
-            <div className="bg-background rounded-lg p-4 space-y-2">
-              <p className="font-medium text-foreground">{sellerContact.info.name}</p>
-              <a href={`mailto:${sellerContact.info.email}`} className="text-primary hover:underline">{sellerContact.info.email}</a>
+            <p className="text-sm text-secondary">
+              Send a message to the seller about <strong>{contactModal.bookTitle}</strong>.
+              Your name, phone, and address will be shared with the seller.
+            </p>
+            <textarea
+              value={contactModal.message}
+              onChange={(e) => setContactModal({ ...contactModal, message: e.target.value })}
+              placeholder="Type your message here..."
+              className="input min-h-[120px] w-full resize-none"
+              rows={5}
+            />
+            <div className="flex gap-3">
+              <button onClick={() => setContactModal(null)} className="btn btn-outline flex-1">Cancel</button>
+              <button
+                onClick={handleSendContact}
+                disabled={!contactModal.message.trim() || contactModal.sending}
+                className="btn btn-primary flex-1"
+              >
+                {contactModal.sending ? "Sending..." : "Send Message"}
+              </button>
             </div>
-            <button onClick={() => setSellerContact(null)} className="btn btn-primary w-full">Close</button>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            <p className="text-secondary">Could not load seller information.</p>
-            <button onClick={() => setSellerContact(null)} className="btn btn-primary w-full">Close</button>
           </div>
         )}
       </Modal>

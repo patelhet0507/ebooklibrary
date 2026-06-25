@@ -1,6 +1,6 @@
 import { config } from "./config";
 
-async function sendEmail(toEmail: string, subject: string, htmlContent: string) {
+export async function sendEmail(toEmail: string, subject: string, htmlContent: string) {
   if (!config.sendgridApiKey) {
     console.log(`[EMAIL] Would send to ${toEmail}: ${subject}`);
     return;
