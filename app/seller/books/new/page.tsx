@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 import { api, BookCreate } from "@/lib/api";
+import ImageUpload from "@/app/components/ImageUpload";
 
 const COMMON_GENRES = [
   "Fiction", "Nonfiction", "Fantasy", "Science Fiction", "Mystery",
@@ -235,16 +236,10 @@ export default function NewBookPage() {
             />
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-foreground mb-2">Cover Image URL</label>
-            <input
-              type="url"
-              value={formData.cover_image || ""}
-              onChange={(e) => setFormData({ ...formData, cover_image: e.target.value || undefined })}
-              className="input"
-              placeholder="https://example.com/cover.jpg"
-            />
-          </div>
+          <ImageUpload
+            value={formData.cover_image || ""}
+            onChange={(v) => setFormData({ ...formData, cover_image: v || undefined })}
+          />
 
           <div className="flex gap-4 pt-4">
             <button

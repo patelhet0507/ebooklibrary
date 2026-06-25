@@ -5,6 +5,7 @@ import { api, Book, BookCreate, BookUpdate } from "@/lib/api";
 import { parseGenres } from "@/lib/utils";
 import Modal from "@/app/components/Modal";
 import ImageManager from "@/app/components/ImageManager";
+import ImageUpload from "@/app/components/ImageUpload";
 
 const COMMON_GENRES = [
   "Fiction", "Nonfiction", "Fantasy", "Science Fiction", "Mystery",
@@ -382,6 +383,10 @@ export default function ModeratorBooks() {
                 className="input resize-none"
               />
             </div>
+            <ImageUpload
+              value={formData.cover_image || ""}
+              onChange={(v) => setFormData({ ...formData, cover_image: v || undefined })}
+            />
             <div className="flex gap-3 pt-2">
               <button type="submit" className="btn btn-primary flex-1">
                 {showModal === "create" ? "Create Book" : "Save Changes"}
