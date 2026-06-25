@@ -1,8 +1,5 @@
 {
-  "scripts": {
-  "postinstall": "prisma generate",
-  "vercel-build": "prisma generate && next build",
-  }
+ 
   "name": "e-book-library",
   "version": "0.1.0",
   "private": true,
