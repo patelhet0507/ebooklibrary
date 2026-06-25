@@ -1,214 +1,297 @@
 "use client";
 
 import Link from "next/link";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/lib/auth-context";
+import { api, Book } from "@/lib/api";
+import { parseGenres } from "@/lib/utils";
+import Modal from "@/app/components/Modal";
+import { useRouter } from "next/navigation";
 
 export default function Home() {
   const { user } = useAuth();
+  const router = useRouter();
+
+  const [books, setBooks] = useState<Book[]>([]);
+  const [totalBooks, setTotalBooks] = useState(0);
+  const [availableGenres, setAvailableGenres] = useState<string[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const [search, setSearch] = useState("");
+  const [genreFilter, setGenreFilter] = useState("");
+  const [sortBy, setSortBy] = useState<"relevance" | "price_asc" | "price_desc" | "rating" | "newest" | "popular">("newest");
+
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [rentModal, setRentModal] = useState<{ book: Book; days: number; total: number; dueDate: string } | null>(null);
+
+  const openRentModal = (book: Book) => {
+    const days = 1;
+    setRentModal({
+      book,
+      days,
+      total: (book.rental_price_per_day || book.price * 0.1) * days,
+      dueDate: new Date(Date.now() + days * 86400000).toLocaleDateString(),
+    });
+  };
+
+  const updateRentDays = (days: number) => {
+    if (!rentModal) return;
+    const clamped = Math.max(1, days);
+    const rate = rentModal.book.rental_price_per_day || rentModal.book.price * 0.1;
+    setRentModal({ ...rentModal, days: clamped, total: rate * clamped, dueDate: new Date(Date.now() + clamped * 86400000).toLocaleDateString() });
+  };
+
+  const fetchBooks = async () => {
+    setLoading(true);
+    try {
+      const data = await api.books.search({
+        q: search || undefined,
+        genre: genreFilter || undefined,
+        sortBy,
+        skip: 0,
+        limit: 24,
+      });
+      setBooks(data.books);
+      setTotalBooks(data.total);
+    } catch {
+      setErrorMessage("Failed to load books");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    api.books.getGenres().then(setAvailableGenres).catch(() => {});
+    fetchBooks();
+  }, []);
+
+  useEffect(() => {
+    fetchBooks();
+  }, [genreFilter, sortBy]);
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    fetchBooks();
+  };
+
+  const handlePurchase = async (bookId: string) => {
+    if (!user) { router.push("/auth/login"); return; }
+    setActionLoading(bookId);
+    try {
+      const transaction = await api.customer.purchase(user.id, { book_id: bookId, quantity: 1 });
+      setBooks(books.map(b => b.id === bookId ? { ...b, stock: b.stock - 1 } : b));
+      router.push(`/payment?transactionId=${transaction.id}`);
+    } catch (err) {
+      setErrorMessage(err instanceof Error ? err.message : "Purchase failed");
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleRent = async () => {
+    if (!user || !rentModal) { router.push("/auth/login"); return; }
+    const bookId = rentModal.book.id;
+    setActionLoading("rent-" + bookId);
+    setRentModal(null);
+    try {
+      const transaction = await api.customer.rent(user.id, { book_id: bookId, quantity: 1, type: "RENT", rental_days: rentModal.days });
+      setBooks(books.map(b => b.id === bookId ? { ...b, stock: b.stock - 1 } : b));
+      router.push(`/payment?transactionId=${transaction.id}`);
+    } catch (err) {
+      setErrorMessage(err instanceof Error ? err.message : "Rent failed");
+    } finally {
+      setActionLoading(null);
+    }
+  };
 
   return (
     <div className="min-h-screen">
-      {/* ── Hero Section ── */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-primary/[0.04] via-background to-blue-400/[0.04] py-24 sm:py-36">
-        {/* Decorative background blobs */}
-        <div className="absolute top-[-20%] left-[-10%] w-[500px] h-[500px] rounded-full bg-primary/5 blur-[100px]" />
-        <div className="absolute bottom-[-20%] right-[-10%] w-[400px] h-[400px] rounded-full bg-blue-400/5 blur-[100px]" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[300px] bg-gradient-to-r from-primary/[0.03] to-blue-400/[0.03] blur-[80px] rotate-12" />
+      {/* ── Hero ── */}
+      <section className="relative overflow-hidden bg-gradient-to-br from-primary/[0.04] via-background to-blue-400/[0.04] py-16 sm:py-24">
+        <div className="absolute top-[-20%] left-[-10%] w-[400px] h-[400px] rounded-full bg-primary/5 blur-[100px]" />
+        <div className="absolute bottom-[-20%] right-[-10%] w-[300px] h-[300px] rounded-full bg-blue-400/5 blur-[100px]" />
 
-        <div className="relative max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <div className="animate-fade-in-up">
-            <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-primary text-sm font-medium mb-8">
-              <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
-              Multi-Role Digital Library Platform
-            </span>
+        <div className="relative max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center max-w-3xl mx-auto">
+            <h1 className="text-4xl sm:text-5xl font-bold tracking-tight text-foreground mb-4 leading-[1.15]">
+              {user ? `Welcome back, ${user.name}` : "Your Digital Library,"}
+              <br />
+              <span className="text-gradient">{user ? "keep exploring" : "Reimagined"}</span>
+            </h1>
+            <p className="text-secondary text-base sm:text-lg mb-8 max-w-xl mx-auto">
+              Browse thousands of books. Buy or rent at affordable prices.
+            </p>
+
+            <form onSubmit={handleSearch} className="flex gap-3 max-w-2xl mx-auto">
+              <div className="relative flex-1">
+                <svg className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+                <input
+                  type="text"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Search by title, author, or ISBN..."
+                  className="input pl-12 flex-1"
+                />
+              </div>
+              <button type="submit" className="btn btn-primary">Search</button>
+            </form>
+
+            <div className="mt-6 flex flex-wrap justify-center gap-2">
+              <button
+                onClick={() => setGenreFilter("")}
+                className={`badge cursor-pointer transition-all ${!genreFilter ? "badge-primary shadow-sm" : "badge-muted hover:badge-primary"}`}
+              >
+                All
+              </button>
+              {availableGenres.slice(0, 10).map((g) => (
+                <button
+                  key={g}
+                  onClick={() => setGenreFilter(g)}
+                  className={`badge cursor-pointer transition-all ${genreFilter === g ? "badge-primary shadow-sm" : "badge-muted hover:badge-primary"}`}
+                >
+                  {g}
+                </button>
+              ))}
+            </div>
+
+            {!user && (
+              <div className="mt-8 flex justify-center gap-3">
+                <Link href="/auth/login" className="btn btn-primary btn-sm">Sign In</Link>
+                <Link href="/auth/register" className="btn btn-outline btn-sm">Create Account</Link>
+              </div>
+            )}
+          </div>
+        </div>
+      </section>
+
+      <div className="section-divider" />
+
+      {/* ── Book Grid ── */}
+      <section className="py-10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h2 className="text-xl font-bold text-foreground">
+                {genreFilter ? genreFilter : "Latest Books"}
+              </h2>
+              {!loading && <p className="text-sm text-muted mt-0.5">{totalBooks} books found</p>}
+            </div>
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
+              className="input !w-auto !py-1.5 !text-sm"
+            >
+              <option value="newest">Newest</option>
+              <option value="relevance">Relevance</option>
+              <option value="rating">Best Rated</option>
+              <option value="price_asc">Price: Low</option>
+              <option value="price_desc">Price: High</option>
+              <option value="popular">Popular</option>
+            </select>
           </div>
 
-          <h1 className="text-5xl sm:text-7xl font-bold tracking-tight text-foreground mb-6 animate-fade-in-up leading-[1.1]">
-            Your Digital Library,{" "}
-            <span className="text-gradient">Reimagined</span>
-          </h1>
-
-          <p className="text-lg sm:text-xl text-secondary max-w-2xl mx-auto mb-10 animate-fade-in-up leading-relaxed" style={{ animationDelay: "0.15s" }}>
-            A complete digital book marketplace with role-based access for sellers, customers, and moderators.
-            Buy, rent, and manage books with ease.
-          </p>
-
-          {!user ? (
-            <div className="flex flex-col sm:flex-row justify-center gap-4 animate-fade-in-up" style={{ animationDelay: "0.25s" }}>
-              <Link href="/auth/login" className="btn btn-primary btn-lg">
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
+          {loading ? (
+            <div className="flex items-center justify-center min-h-[40vh]">
+              <div className="spinner" />
+            </div>
+          ) : books.length === 0 ? (
+            <div className="card p-16 text-center">
+              <div className="w-20 h-20 mx-auto mb-6 rounded-2xl bg-primary/5 flex items-center justify-center">
+                <svg className="w-10 h-10 text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
                 </svg>
-                Sign In
-              </Link>
-              <Link href="/auth/register" className="btn btn-outline btn-lg">
-                Create Free Account
-              </Link>
+              </div>
+              <h3 className="text-xl font-semibold text-foreground mb-2">No books found</h3>
+              <p className="text-secondary">Try adjusting your search or filters.</p>
             </div>
           ) : (
-            <div className="animate-fade-in-up" style={{ animationDelay: "0.25s" }}>
-              <p className="text-secondary mb-6 text-lg">Welcome back, <span className="font-semibold text-foreground">{user.name}</span>!</p>
-              <div className="flex flex-wrap justify-center gap-3">
-                {user.role === "SELLER" && (
-                  <Link href="/seller/dashboard" className="btn btn-primary btn-lg">
-                    Go to Dashboard
-                  </Link>
-                )}
-                {user.role === "CUSTOMER" && (
-                  <Link href="/customer/books" className="btn btn-primary btn-lg">
-                    Browse Books
-                  </Link>
-                )}
-                {user.role === "MODERATOR" && (
-                  <Link href="/moderator/dashboard" className="btn btn-primary btn-lg">
-                    Moderator Dashboard
-                  </Link>
-                )}
-              </div>
+            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              {books.map((book, index) => (
+                <div key={book.id} className="group card card-interactive p-0 animate-fade-in flex flex-col relative overflow-hidden" style={{ animationDelay: `${index * 0.03}s` }}>
+                  {(book.images?.find(i => i.is_primary) || book.cover_image) ? (
+                    <div className="w-full h-40 overflow-hidden rounded-t-lg bg-primary/[0.02]">
+                      <img src={book.images?.find(i => i.is_primary)?.url || book.cover_image!} alt="" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                        onError={(e) => { (e.target as HTMLImageElement).parentElement!.style.display = "none"; }} />
+                    </div>
+                  ) : (
+                    <div className="w-full h-40 rounded-t-lg bg-gradient-to-br from-primary/[0.06] to-blue-400/[0.06] flex items-center justify-center">
+                      <svg className="w-10 h-10 text-primary/20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                      </svg>
+                    </div>
+                  )}
+                  <div className="p-4 flex-1 flex flex-col">
+                    <Link href={`/books/${book.slug || book.id}`} className="text-sm font-semibold text-foreground mb-1 line-clamp-1 hover:text-primary transition-colors block">{book.title}</Link>
+                    <p className="text-xs text-secondary mb-2">{book.author}</p>
+                    <div className="flex items-center gap-1 mb-2">
+                      {[1, 2, 3, 4, 5].map(star => (
+                        <svg key={star} className={`w-3 h-3 ${star <= Math.round(book.avg_rating || 0) ? 'text-warning' : 'text-gray-300'}`} fill="currentColor" viewBox="0 0 20 20">
+                          <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                        </svg>
+                      ))}
+                      {book.review_count !== undefined && book.review_count !== null && (
+                        <span className="text-[0.6rem] text-muted">({book.review_count})</span>
+                      )}
+                    </div>
+                    <div className="flex items-end justify-between mt-auto pt-3 border-t border-border/40">
+                      <div>
+                        <p className="text-base font-bold text-success">₹{book.price.toFixed(2)}</p>
+                        <p className="text-[0.6rem] text-muted">or ₹{(book.rental_price_per_day || book.price * 0.1).toFixed(2)}/day</p>
+                      </div>
+                      <span className={`badge text-[0.6rem] px-2 py-0.5 ${book.stock > 0 ? "badge-success" : "badge-danger"}`}>
+                        {book.stock > 0 ? `${book.stock} left` : "Sold out"}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex gap-1.5 px-4 pb-4">
+                    <button onClick={() => handlePurchase(book.id)} disabled={book.stock === 0 || actionLoading === book.id} className="btn btn-primary flex-1 text-xs py-1.5">
+                      {actionLoading === book.id ? <span className="spinner !w-3 !h-3 !border-1.5" /> : "Buy"}
+                    </button>
+                    <button onClick={() => openRentModal(book)} disabled={book.stock === 0 || actionLoading === ("rent-" + book.id)} className="btn btn-outline flex-1 text-xs py-1.5">
+                      {actionLoading === ("rent-" + book.id) ? <span className="spinner !w-3 !h-3 !border-1.5" /> : "Rent"}
+                    </button>
+                  </div>
+                </div>
+              ))}
             </div>
           )}
         </div>
       </section>
 
-      {/* ── Stats Bar ── */}
-      <section className="relative">
-        <div className="section-divider" />
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-8">
-            {[
-              { value: "14", label: "Day Returns", color: "text-primary" },
-              { value: "15%", label: "Commission", color: "text-success" },
-              { value: "₹5", label: "Daily Fine", color: "text-warning" },
-              { value: "24/7", label: "Access", color: "text-primary" },
-            ].map((stat, i) => (
-              <div key={stat.label} className="text-center animate-fade-in-up" style={{ animationDelay: `${0.1 + i * 0.08}s` }}>
-                <p className={`text-4xl sm:text-5xl font-black ${stat.color}`}>{stat.value}</p>
-                <p className="text-sm text-muted mt-1.5 font-medium uppercase tracking-wider">{stat.label}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-        <div className="section-divider" />
-      </section>
-
-      {/* ── Features Section ── */}
-      <section className="py-24">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-4">
-              Built for <span className="text-gradient">Everyone</span>
-            </h2>
-            <p className="text-secondary max-w-xl mx-auto">
-              Three distinct experiences tailored to your role in the ecosystem.
-            </p>
-          </div>
-
-          <div className="grid gap-8 md:grid-cols-3">
-            {[
-              {
-                title: "For Sellers",
-                desc: "List your books, manage inventory with easy stock controls, and track your earnings with detailed analytics.",
-                gradient: "from-primary/10 to-blue-400/10",
-                icon: "M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z",
-                delay: "0.1s",
-              },
-              {
-                title: "For Customers",
-                desc: "Browse, purchase, and return books easily with a generous 14-day return window and flexible rental options.",
-                gradient: "from-success/10 to-emerald-400/10",
-                icon: "M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253",
-                delay: "0.2s",
-              },
-              {
-                title: "For Moderators",
-                desc: "Manage the platform, track returns, handle fines, and view comprehensive reports and analytics.",
-                gradient: "from-warning/10 to-amber-400/10",
-                icon: "M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z",
-                delay: "0.3s",
-              },
-            ].map((feature) => (
-              <div
-                key={feature.title}
-                className="group relative card p-8 text-center animate-fade-in-up overflow-hidden"
-                style={{ animationDelay: feature.delay }}
-              >
-                <div className={`absolute -top-12 -right-12 w-32 h-32 rounded-full bg-gradient-to-br ${feature.gradient} blur-2xl transition-all duration-500 group-hover:scale-150`} />
-                <div className="relative">
-                  <div className="w-16 h-16 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-white to-background shadow-lg shadow-primary/5 flex items-center justify-center ring-1 ring-border">
-                    <svg className="w-8 h-8 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d={feature.icon} />
-                    </svg>
-                  </div>
-                  <h3 className="text-xl font-semibold text-foreground mb-3">{feature.title}</h3>
-                  <p className="text-secondary leading-relaxed">{feature.desc}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── How It Works ── */}
-      <section className="py-24 bg-white/50">
-        <div className="section-divider" />
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-16">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-4">
-              How It <span className="text-gradient">Works</span>
-            </h2>
-            <p className="text-secondary max-w-xl mx-auto">
-              Get started in three simple steps.
-            </p>
-          </div>
-
-          <div className="grid gap-8 md:grid-cols-3">
-            {[
-              { step: "01", title: "Create Account", desc: "Sign up as a seller, customer, or moderator. Each role gets a tailored experience.", icon: "M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" },
-              { step: "02", title: "Browse & Discover", desc: "Explore our curated collection of books. Search by title, author, genre, or language.", icon: "M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" },
-              { step: "03", title: "Buy or Rent", desc: "Purchase your favorite books or rent them at affordable daily rates. Read anywhere, anytime.", icon: "M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" },
-            ].map((item) => (
-              <div key={item.title} className="text-center animate-fade-in-up" style={{ animationDelay: `${0.1 + parseFloat(item.step) * 0.08}s` }}>
-                <div className="w-16 h-16 mx-auto mb-6 rounded-2xl bg-primary/10 flex items-center justify-center">
-                  <svg className="w-8 h-8 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d={item.icon} />
-                  </svg>
-                </div>
-                <span className="inline-block px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-bold tracking-wider mb-3">{item.step}</span>
-                <h3 className="text-xl font-semibold text-foreground mb-3">{item.title}</h3>
-                <p className="text-secondary leading-relaxed max-w-xs mx-auto">{item.desc}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── CTA Section ── */}
-      {!user && (
-        <section className="py-24">
-          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-            <div className="card p-12 sm:p-16 relative overflow-hidden">
-              <div className="absolute -top-24 -right-24 w-64 h-64 rounded-full bg-gradient-to-br from-primary/10 to-blue-400/10 blur-3xl" />
-              <div className="absolute -bottom-24 -left-24 w-64 h-64 rounded-full bg-gradient-to-br from-success/10 to-emerald-400/10 blur-3xl" />
-              <div className="relative">
-                <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-4">
-                  Ready to Get <span className="text-gradient">Started</span>?
-                </h2>
-                <p className="text-secondary text-lg mb-8 max-w-lg mx-auto">
-                  Join thousands of readers and sellers on the most elegant digital book platform.
-                </p>
-                <div className="flex flex-col sm:flex-row justify-center gap-4">
-                  <Link href="/auth/register" className="btn btn-primary btn-lg">
-                    Create Free Account
-                  </Link>
-                  <Link href="/auth/login" className="btn btn-outline btn-lg">
-                    Sign In
-                  </Link>
-                </div>
-              </div>
+      {/* Rent Modal */}
+      <Modal isOpen={!!rentModal} onClose={() => setRentModal(null)} title={`Rent "${rentModal?.book.title || ""}"`}>
+        {rentModal && (
+          <>
+            <p className="text-secondary text-sm mb-6">₹{(rentModal.book.rental_price_per_day || rentModal.book.price * 0.1).toFixed(2)} per day</p>
+            <div className="mb-5">
+              <label className="block text-sm font-medium text-foreground mb-2">Number of Days</label>
+              <input type="number" min={1} value={rentModal.days} onChange={e => updateRentDays(parseInt(e.target.value) || 1)} className="input" />
             </div>
-          </div>
-        </section>
-      )}
+            <div className="bg-background rounded-xl p-4 mb-6 space-y-2.5">
+              <div className="flex justify-between text-sm"><span className="text-secondary">Daily Rate</span><span className="font-medium">₹{(rentModal.book.rental_price_per_day || rentModal.book.price * 0.1).toFixed(2)}</span></div>
+              <div className="flex justify-between text-sm"><span className="text-secondary">Days</span><span className="font-medium">{rentModal.days}</span></div>
+              <div className="flex justify-between text-sm"><span className="text-secondary">Due Date</span><span className="font-medium">{rentModal.dueDate}</span></div>
+              <div className="border-t border-border my-2" />
+              <div className="flex justify-between font-bold text-base"><span>Total</span><span className="text-primary">₹{rentModal.total.toFixed(2)}</span></div>
+            </div>
+            <div className="flex gap-3">
+              <button onClick={() => setRentModal(null)} className="btn btn-outline flex-1">Cancel</button>
+              <button onClick={handleRent} disabled={actionLoading === ("rent-" + rentModal.book.id)} className="btn btn-primary flex-1">
+                {actionLoading === ("rent-" + rentModal.book.id) ? "Processing..." : "Confirm Rent"}
+              </button>
+            </div>
+          </>
+        )}
+      </Modal>
+
+      {/* Error Modal */}
+      <Modal isOpen={!!errorMessage} onClose={() => setErrorMessage(null)} title="Error">
+        <p className="text-secondary mb-6">{errorMessage}</p>
+        <button onClick={() => setErrorMessage(null)} className="btn btn-primary w-full">OK</button>
+      </Modal>
     </div>
   );
 }

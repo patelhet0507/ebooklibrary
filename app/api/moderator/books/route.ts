@@ -4,6 +4,7 @@ import { randomUUID } from "crypto"
 import { NextRequest, NextResponse } from "next/server"
 import { stringifyGenres } from "@/lib/utils"
 import { withAuth } from "@/lib/api-auth"
+import { notifyUsersOnNewBook } from "@/lib/book-notify"
 
 export async function GET(request: NextRequest) {
   return withAuth(async (session, req) => {
@@ -60,6 +61,8 @@ export async function POST(request: NextRequest) {
       },
       include: { images: true },
     })
+
+    notifyUsersOnNewBook(book.id)
 
     return NextResponse.json(book, { status: 201 })
   }, request, ["MODERATOR"])

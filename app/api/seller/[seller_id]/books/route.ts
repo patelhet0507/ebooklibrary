@@ -4,6 +4,7 @@ import { BookCreate } from "@/lib/api"
 import { randomUUID } from "crypto"
 import { stringifyGenres } from "@/lib/utils"
 import { withAuth } from "@/lib/api-auth"
+import { notifyUsersOnNewBook } from "@/lib/book-notify"
 
 export async function GET(
   request: NextRequest,
@@ -55,6 +56,7 @@ export async function POST(
           slug,
         },
       })
+      notifyUsersOnNewBook(book.id)
       return NextResponse.json(book, { status: 201 });
     } catch (error) {
       const message = error instanceof Error ? error.message : "Failed to create book"
