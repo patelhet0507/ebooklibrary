@@ -8,7 +8,7 @@ export async function GET(
 ) {
   return withAuth(async (session, req) => {
     const { customer_id } = await params
-    if (session.role !== "CUSTOMER" && session.userId !== customer_id) {
+    if (session.userId !== customer_id) {
       return NextResponse.json({ detail: "Unauthorized" }, { status: 403 });
     }
 
@@ -18,5 +18,5 @@ export async function GET(
     })
 
     return NextResponse.json(fines);
-  }, request, ["CUSTOMER"])
+  }, request)
 }

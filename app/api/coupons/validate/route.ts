@@ -61,5 +61,5 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json({ valid: true, coupon: { ...coupon, discount } })
-  }, request, ["CUSTOMER"])
+  }, request)
 }

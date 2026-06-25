@@ -8,13 +8,13 @@ export async function GET(
 ) {
   return withAuth(async (session, req) => {
     const { customer_id } = await params
-    if (session.role !== "CUSTOMER" && session.userId !== customer_id) {
+    if (session.userId !== customer_id) {
       return NextResponse.json({ detail: "Unauthorized" }, { status: 403 });
     }
 
     const user = await prisma.user.findUnique({ where: { id: customer_id } })
     if (!user) {
-      return NextResponse.json({ detail: "Customer not found" }, { status: 404 });
+      return NextResponse.json({ detail: "User not found" }, { status: 404 });
     }
 
     const purchaseAgg = await prisma.transaction.aggregate({
@@ -46,5 +46,5 @@ export async function GET(
     }
 
     return NextResponse.json(dashboard);
-  }, request, ["CUSTOMER"])
+  }, request)
 }

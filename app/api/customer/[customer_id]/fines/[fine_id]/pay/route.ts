@@ -8,7 +8,7 @@ export async function PUT(
 ) {
   return withAuth(async (session, req) => {
     const { customer_id, fine_id } = await params
-    if (session.role !== "CUSTOMER" && session.userId !== customer_id) {
+    if (session.userId !== customer_id) {
       return NextResponse.json({ detail: "Unauthorized" }, { status: 403 });
     }
 
@@ -26,5 +26,5 @@ export async function PUT(
     })
 
     return NextResponse.json(updated);
-  }, request, ["CUSTOMER"])
+  }, request)
 }
