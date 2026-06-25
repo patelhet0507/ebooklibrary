@@ -40,7 +40,7 @@ function InvoicePageContent() {
       <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8 text-center">
         <h2 className="text-xl font-bold text-foreground mb-2">Invoice Not Found</h2>
         <p className="text-secondary mb-6">{invoiceError}</p>
-        <button onClick={() => router.push("/customer/transactions")} className="btn btn-primary">Go to Transactions</button>
+        <button onClick={() => router.push("/transactions")} className="btn btn-primary">Go to Transactions</button>
       </div>
     );
   }
@@ -62,7 +62,7 @@ function InvoicePageContent() {
           </svg>
           Print
         </button>
-        <button onClick={() => router.push("/customer/transactions")} className="btn btn-outline">
+        <button onClick={() => router.push("/transactions")} className="btn btn-outline">
           My Transactions
         </button>
       </div>

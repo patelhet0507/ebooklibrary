@@ -56,7 +56,7 @@ export default function SellerBooks() {
           <h1 className="text-2xl font-bold text-foreground">My Books</h1>
           <p className="text-secondary mt-1">{books.length} books in your inventory</p>
         </div>
-        <Link href="/seller/books/new" className="btn btn-primary">
+        <Link href="/my-books/new" className="btn btn-primary">
           <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
           </svg>

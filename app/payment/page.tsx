@@ -40,7 +40,7 @@ function PaymentPageContent() {
           setTransaction(t);
           api.payments.getUserPayments(user.id).then(payments => {
             if (payments.some(p => p.transaction_id === transactionId) && !paidInSession.current) {
-              router.push("/customer/transactions");
+              router.push("/transactions");
               return;
             }
           });
