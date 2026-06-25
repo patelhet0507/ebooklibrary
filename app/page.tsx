@@ -133,7 +133,7 @@ export default function Home() {
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder="Search by title, author, or ISBN..."
-                  className="input pl-12 flex-1"
+                  className="input flex-1" style={{ paddingLeft: "3rem" }}
                 />
               </div>
               <button type="submit" className="btn btn-primary">Search</button>
