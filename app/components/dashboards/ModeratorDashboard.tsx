@@ -192,35 +192,35 @@ export default function ModeratorDashboard() {
 
       {/* Quick Actions */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 mb-8">
-        <Link href="/moderator/books" className="card card-interactive p-4 flex items-center gap-3">
+        <Link href="/manage-books" className="card card-interactive p-4 flex items-center gap-3">
           <svg className="w-5 h-5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
           </svg>
           <span className="font-medium text-sm">Manage Books</span>
         </Link>
         
-        <Link href="/moderator/users" className="card card-interactive p-4 flex items-center gap-3">
+        <Link href="/admin/users" className="card card-interactive p-4 flex items-center gap-3">
           <svg className="w-5 h-5 text-secondary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
           </svg>
           <span className="font-medium text-sm">Manage Users</span>
         </Link>
         
-        <Link href="/moderator/returns" className="card card-interactive p-4 flex items-center gap-3">
+        <Link href="/admin/returns" className="card card-interactive p-4 flex items-center gap-3">
           <svg className="w-5 h-5 text-warning" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
           </svg>
           <span className="font-medium text-sm">Track Returns</span>
         </Link>
         
-        <Link href="/moderator/fines" className="card card-interactive p-4 flex items-center gap-3">
+        <Link href="/admin/fines" className="card card-interactive p-4 flex items-center gap-3">
           <svg className="w-5 h-5 text-danger" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
           </svg>
           <span className="font-medium text-sm">Manage Fines</span>
         </Link>
         
-        <Link href="/moderator/reports" className="card card-interactive p-4 flex items-center gap-3">
+        <Link href="/admin/reports" className="card card-interactive p-4 flex items-center gap-3">
           <svg className="w-5 h-5 text-success" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
           </svg>
@@ -233,7 +233,7 @@ export default function ModeratorDashboard() {
         <div className="card mb-8">
           <div className="p-6 border-b border-border flex items-center justify-between">
             <h2 className="text-lg font-semibold text-foreground">Pending Return Requests</h2>
-            <Link href="/moderator/returns" className="text-sm text-primary hover:underline">
+            <Link href="/admin/returns" className="text-sm text-primary hover:underline">
               View all →
             </Link>
           </div>

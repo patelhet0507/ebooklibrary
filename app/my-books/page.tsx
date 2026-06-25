@@ -71,7 +71,7 @@ export default function SellerBooks() {
           </svg>
           <h3 className="text-lg font-medium text-foreground mb-2">No books yet</h3>
           <p className="text-secondary mb-6">Start by adding your first book to the inventory.</p>
-          <Link href="/seller/books/new" className="btn btn-primary">
+        <Link href="/my-books/new" className="btn btn-primary">
             Add Your First Book
           </Link>
         </div>

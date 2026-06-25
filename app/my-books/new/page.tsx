@@ -70,7 +70,7 @@ export default function NewBookPage() {
         cover_image: formData.cover_image || undefined,
       };
       await api.seller.createBook(user.id, data);
-      router.push("/seller/books");
+      router.push("/my-books");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to create book");
     } finally {

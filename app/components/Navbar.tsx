@@ -52,30 +52,30 @@ export default function Navbar() {
               <>
                 {user.role === "SELLER" && (
                   <>
-                    {navLink("/seller/dashboard", "Dashboard")}
-                    {navLink("/seller/books", "My Books")}
-                    {navLink("/customer/books", "Browse")}
+                    {navLink("/dashboard", "Dashboard")}
+                    {navLink("/my-books", "My Books")}
+                    {navLink("/browse", "Browse")}
                   </>
                 )}
                 {user.role === "CUSTOMER" && (
                   <>
-                    {navLink("/customer/dashboard", "Dashboard")}
-                    {navLink("/customer/books", "Browse")}
-                    {navLink("/customer/transactions", "Purchases")}
-                    {iconLink("/customer/wishlist", "Wishlist",
+                    {navLink("/dashboard", "Dashboard")}
+                    {navLink("/browse", "Browse")}
+                    {navLink("/transactions", "Purchases")}
+                    {iconLink("/wishlist", "Wishlist",
                       <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" /></svg>
                     )}
-                    {iconLink("/customer/notifications", "Notifications",
+                    {iconLink("/notifications", "Notifications",
                       <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.437L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>
                     )}
                   </>
                 )}
                 {user.role === "MODERATOR" && (
                   <>
-                    {navLink("/moderator/dashboard", "Dashboard")}
-                    {navLink("/moderator/reports", "Analytics")}
-                    {navLink("/moderator/coupons", "Coupons")}
-                    {navLink("/customer/books", "Browse")}
+                    {navLink("/dashboard", "Dashboard")}
+                    {navLink("/admin/reports", "Analytics")}
+                    {navLink("/admin/coupons", "Coupons")}
+                    {navLink("/browse", "Browse")}
                   </>
                 )}
                 <div className="ml-3 pl-3 border-l border-border flex items-center gap-2">
@@ -143,26 +143,26 @@ export default function Navbar() {
                   </div>
                   {user.role === "SELLER" && (
                     <>
-                      <Link href="/seller/dashboard" className="px-3 py-2 text-sm rounded-xl hover:bg-primary-light transition-colors" onClick={() => setMobileOpen(false)}>Dashboard</Link>
-                      <Link href="/seller/books" className="px-3 py-2 text-sm rounded-xl hover:bg-primary-light transition-colors" onClick={() => setMobileOpen(false)}>My Books</Link>
-                      <Link href="/customer/books" className="px-3 py-2 text-sm rounded-xl hover:bg-primary-light transition-colors" onClick={() => setMobileOpen(false)}>Browse</Link>
+                      <Link href="/dashboard" className="px-3 py-2 text-sm rounded-xl hover:bg-primary-light transition-colors" onClick={() => setMobileOpen(false)}>Dashboard</Link>
+                      <Link href="/my-books" className="px-3 py-2 text-sm rounded-xl hover:bg-primary-light transition-colors" onClick={() => setMobileOpen(false)}>My Books</Link>
+                      <Link href="/browse" className="px-3 py-2 text-sm rounded-xl hover:bg-primary-light transition-colors" onClick={() => setMobileOpen(false)}>Browse</Link>
                     </>
                   )}
                   {user.role === "CUSTOMER" && (
                     <>
-                      <Link href="/customer/dashboard" className="px-3 py-2 text-sm rounded-xl hover:bg-primary-light transition-colors" onClick={() => setMobileOpen(false)}>Dashboard</Link>
-                      <Link href="/customer/books" className="px-3 py-2 text-sm rounded-xl hover:bg-primary-light transition-colors" onClick={() => setMobileOpen(false)}>Browse</Link>
-                      <Link href="/customer/transactions" className="px-3 py-2 text-sm rounded-xl hover:bg-primary-light transition-colors" onClick={() => setMobileOpen(false)}>Purchases</Link>
-                      <Link href="/customer/wishlist" className="px-3 py-2 text-sm rounded-xl hover:bg-primary-light transition-colors" onClick={() => setMobileOpen(false)}>Wishlist</Link>
-                      <Link href="/customer/notifications" className="px-3 py-2 text-sm rounded-xl hover:bg-primary-light transition-colors" onClick={() => setMobileOpen(false)}>Notifications</Link>
+                      <Link href="/dashboard" className="px-3 py-2 text-sm rounded-xl hover:bg-primary-light transition-colors" onClick={() => setMobileOpen(false)}>Dashboard</Link>
+                      <Link href="/browse" className="px-3 py-2 text-sm rounded-xl hover:bg-primary-light transition-colors" onClick={() => setMobileOpen(false)}>Browse</Link>
+                      <Link href="/transactions" className="px-3 py-2 text-sm rounded-xl hover:bg-primary-light transition-colors" onClick={() => setMobileOpen(false)}>Purchases</Link>
+                      <Link href="/wishlist" className="px-3 py-2 text-sm rounded-xl hover:bg-primary-light transition-colors" onClick={() => setMobileOpen(false)}>Wishlist</Link>
+                      <Link href="/notifications" className="px-3 py-2 text-sm rounded-xl hover:bg-primary-light transition-colors" onClick={() => setMobileOpen(false)}>Notifications</Link>
                     </>
                   )}
                   {user.role === "MODERATOR" && (
                     <>
-                      <Link href="/moderator/dashboard" className="px-3 py-2 text-sm rounded-xl hover:bg-primary-light transition-colors" onClick={() => setMobileOpen(false)}>Dashboard</Link>
-                      <Link href="/moderator/reports" className="px-3 py-2 text-sm rounded-xl hover:bg-primary-light transition-colors" onClick={() => setMobileOpen(false)}>Analytics</Link>
-                      <Link href="/moderator/coupons" className="px-3 py-2 text-sm rounded-xl hover:bg-primary-light transition-colors" onClick={() => setMobileOpen(false)}>Coupons</Link>
-                      <Link href="/customer/books" className="px-3 py-2 text-sm rounded-xl hover:bg-primary-light transition-colors" onClick={() => setMobileOpen(false)}>Browse</Link>
+                      <Link href="/dashboard" className="px-3 py-2 text-sm rounded-xl hover:bg-primary-light transition-colors" onClick={() => setMobileOpen(false)}>Dashboard</Link>
+                      <Link href="/admin/reports" className="px-3 py-2 text-sm rounded-xl hover:bg-primary-light transition-colors" onClick={() => setMobileOpen(false)}>Analytics</Link>
+                      <Link href="/admin/coupons" className="px-3 py-2 text-sm rounded-xl hover:bg-primary-light transition-colors" onClick={() => setMobileOpen(false)}>Coupons</Link>
+                      <Link href="/browse" className="px-3 py-2 text-sm rounded-xl hover:bg-primary-light transition-colors" onClick={() => setMobileOpen(false)}>Browse</Link>
                     </>
                   )}
                   <hr className="border-border my-2" />

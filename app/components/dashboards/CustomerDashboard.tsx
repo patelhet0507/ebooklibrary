@@ -133,7 +133,7 @@ export default function CustomerDashboard() {
 
       {/* Quick Actions */}
       <div className="grid gap-6 sm:grid-cols-3 mb-8">
-        <Link href="/customer/books" className="card card-interactive p-6 flex items-center gap-4">
+        <Link href="/browse" className="card card-interactive p-6 flex items-center gap-4">
           <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
             <svg className="w-6 h-6 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -145,7 +145,7 @@ export default function CustomerDashboard() {
           </div>
         </Link>
         
-        <Link href="/customer/transactions" className="card card-interactive p-6 flex items-center gap-4">
+        <Link href="/transactions" className="card card-interactive p-6 flex items-center gap-4">
           <div className="w-12 h-12 rounded-xl bg-secondary/10 flex items-center justify-center">
             <svg className="w-6 h-6 text-secondary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
@@ -157,7 +157,7 @@ export default function CustomerDashboard() {
           </div>
         </Link>
         
-        <Link href="/customer/fines" className="card card-interactive p-6 flex items-center gap-4">
+        <Link href="/my/fines" className="card card-interactive p-6 flex items-center gap-4">
           <div className="w-12 h-12 rounded-xl bg-warning/10 flex items-center justify-center">
             <svg className="w-6 h-6 text-warning" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
@@ -178,7 +178,7 @@ export default function CustomerDashboard() {
           </svg>
           <p>
             You have <strong>{pendingFines.length}</strong> pending fine(s).{" "}
-            <Link href="/customer/fines" className="underline font-medium">Pay now</Link>
+             <Link href="/my/fines" className="underline font-medium">Pay now</Link>
           </p>
         </div>
       )}
@@ -200,7 +200,7 @@ export default function CustomerDashboard() {
         <div className="p-6 border-b border-border">
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-semibold text-foreground">Recent Activity</h2>
-            <Link href="/customer/transactions" className="text-primary text-sm font-medium hover:underline">
+             <Link href="/transactions" className="text-primary text-sm font-medium hover:underline">
               View all
             </Link>
           </div>
@@ -213,7 +213,7 @@ export default function CustomerDashboard() {
             </svg>
             <h3 className="text-lg font-medium text-foreground mb-2">No activity yet</h3>
             <p className="text-secondary mb-4">Start browsing books to make your first purchase or rental.</p>
-            <Link href="/customer/books" className="btn btn-primary">
+             <Link href="/browse" className="btn btn-primary">
               Browse Books
             </Link>
           </div>

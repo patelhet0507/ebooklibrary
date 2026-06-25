@@ -26,10 +26,8 @@ export default function CustomerNotifications() {
   const [filter, setFilter] = useState<"ALL" | "UNREAD" | "READ">("ALL");
 
   useEffect(() => {
-    if (user && user.role === "CUSTOMER") {
+    if (user) {
       fetchNotifications();
-    } else if (user) {
-      router.push("/");
     } else {
       router.push("/auth/login");
     }

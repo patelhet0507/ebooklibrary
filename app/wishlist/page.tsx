@@ -18,10 +18,8 @@ export default function CustomerWishlist() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
-    if (user && user.role === "CUSTOMER") {
+    if (user) {
       fetchWishlist();
-    } else if (user) {
-      router.push("/");
     } else {
       router.push("/auth/login");
     }
@@ -130,7 +128,7 @@ export default function CustomerWishlist() {
           </svg>
           <h3 className="text-lg font-medium text-foreground mb-2">Your wishlist is empty</h3>
           <p className="text-secondary mb-6">Browse our collection and save books you're interested in.</p>
-          <Link href="/customer/books" className="btn btn-primary">
+          <Link href="/browse" className="btn btn-primary">
             Browse Books
           </Link>
         </div>
