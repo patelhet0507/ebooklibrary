@@ -212,8 +212,8 @@ export default function Home() {
               {books.map((book, index) => (
                 <div key={book.id} className="group card card-interactive p-0 animate-fade-in flex flex-col relative overflow-hidden" style={{ animationDelay: `${index * 0.03}s` }}>
                   {(book.images?.find(i => i.is_primary) || book.cover_image) ? (
-                    <div className="w-full h-40 overflow-hidden rounded-t-lg bg-primary/[0.02]">
-                      <img src={book.images?.find(i => i.is_primary)?.url || book.cover_image!} alt="" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                    <div className="w-full overflow-hidden rounded-t-lg bg-primary/[0.02] max-h-96">
+                      <img src={book.images?.find(i => i.is_primary)?.url || book.cover_image!} alt="" className="w-full object-contain transition-transform duration-500 group-hover:scale-105"
                         onError={(e) => { (e.target as HTMLImageElement).parentElement!.style.display = "none"; }} />
                     </div>
                   ) : (

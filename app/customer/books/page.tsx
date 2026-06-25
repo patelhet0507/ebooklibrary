@@ -356,11 +356,11 @@ export default function CustomerBooks() {
               
               {/* Cover image */}
               {(book.images?.find(i => i.is_primary) || book.cover_image) ? (
-                <div className="w-full h-44 overflow-hidden rounded-t-lg bg-primary/[0.02]">
+                <div className="w-full overflow-hidden rounded-t-lg bg-primary/[0.02] max-h-96">
                   <img
                     src={book.images?.find(i => i.is_primary)?.url || book.cover_image!}
                     alt=""
-                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                    className="w-full object-contain transition-transform duration-500 group-hover:scale-105"
                     onError={(e) => { (e.target as HTMLImageElement).parentElement!.style.display = "none"; }}
                   />
                 </div>

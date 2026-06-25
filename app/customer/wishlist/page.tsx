@@ -150,11 +150,11 @@ export default function CustomerWishlist() {
               </button>
               
               {(book.images?.find(i => i.is_primary) || book.cover_image) ? (
-                <div className="w-full h-40 overflow-hidden rounded-t-lg">
+                <div className="w-full overflow-hidden rounded-t-lg bg-primary/[0.02] max-h-96">
                   <img
                     src={book.images?.find(i => i.is_primary)?.url || book.cover_image!}
                     alt=""
-                    className="w-full h-full object-cover"
+                    className="w-full object-contain"
                     onError={(e) => { (e.target as HTMLImageElement).parentElement!.style.display = "none"; }}
                   />
                 </div>
