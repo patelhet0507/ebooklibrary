@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { api, User, UserProfileUpdate } from "@/lib/api";
+import Modal from "@/app/components/Modal";
 
 export const dynamic = "force-dynamic";
 
@@ -10,7 +11,8 @@ export default function ProfilePage() {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const [editing, setEditing] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
   const [profile, setProfile] = useState<User | null>(null);
   const [formData, setFormData] = useState({
     name: "",
@@ -41,9 +43,8 @@ export default function ProfilePage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
-    
+
     setSaving(true);
-    setMessage(null);
     try {
       const updateData: UserProfileUpdate = {
         name: formData.name,
@@ -53,15 +54,33 @@ export default function ProfilePage() {
         state: formData.state || undefined,
         pincode: formData.pincode || undefined,
       };
-      
+
       const updated = await api.profile.update(user.id, updateData);
       setProfile(updated);
-      setMessage({ type: "success", text: "Profile updated successfully!" });
+      setEditing(false);
+      setSaving(false);
+      setShowSuccess(true);
     } catch (err) {
-      setMessage({ type: "error", text: err instanceof Error ? err.message : "Failed to update profile" });
-    } finally {
       setSaving(false);
     }
+  };
+
+  const startEditing = () => {
+    setEditing(true);
+  };
+
+  const cancelEditing = () => {
+    if (profile) {
+      setFormData({
+        name: profile.name,
+        phone: profile.phone || "",
+        address: profile.address || "",
+        city: profile.city || "",
+        state: profile.state || "",
+        pincode: profile.pincode || "",
+      });
+    }
+    setEditing(false);
   };
 
   if (loading) return (
@@ -72,9 +91,19 @@ export default function ProfilePage() {
 
   return (
     <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8 page-enter">
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-foreground">My Profile</h1>
-        <p className="text-secondary mt-1">Manage your account information</p>
+      <div className="mb-8 flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-foreground">My Profile</h1>
+          <p className="text-secondary mt-1">Manage your account information</p>
+        </div>
+        {!editing && (
+          <button onClick={startEditing} className="btn btn-outline">
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+            </svg>
+            Edit
+          </button>
+        )}
       </div>
 
       {/* XP Progress */}
@@ -107,13 +136,15 @@ export default function ProfilePage() {
 
       {/* Profile Form */}
       <div className="card p-6">
+        {editing && (
+          <div className="flex items-center gap-2 px-4 py-2.5 mb-6 rounded-xl bg-primary/5 border border-primary/10 text-sm text-primary font-medium">
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+            </svg>
+            You are editing your profile. Save or cancel when done.
+          </div>
+        )}
         <form onSubmit={handleSubmit} className="space-y-6">
-          {message && (
-            <div className={`p-4 rounded-lg ${message.type === "success" ? "bg-success/10 text-success" : "bg-danger/10 text-danger"}`}>
-              {message.text}
-            </div>
-          )}
-
           <div>
             <label className="block text-sm font-medium text-foreground mb-2">Full Name</label>
             <input
@@ -123,6 +154,7 @@ export default function ProfilePage() {
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               className="input"
               placeholder="Enter your full name"
+              disabled={!editing}
             />
           </div>
 
@@ -145,6 +177,7 @@ export default function ProfilePage() {
               onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
               className="input"
               placeholder="Enter phone number"
+              disabled={!editing}
             />
           </div>
 
@@ -156,6 +189,7 @@ export default function ProfilePage() {
               onChange={(e) => setFormData({ ...formData, address: e.target.value })}
               className="input resize-none"
               placeholder="Enter your address"
+              disabled={!editing}
             />
           </div>
 
@@ -168,6 +202,7 @@ export default function ProfilePage() {
                 onChange={(e) => setFormData({ ...formData, city: e.target.value })}
                 className="input"
                 placeholder="City"
+                disabled={!editing}
               />
             </div>
             <div>
@@ -178,6 +213,7 @@ export default function ProfilePage() {
                 onChange={(e) => setFormData({ ...formData, state: e.target.value })}
                 className="input"
                 placeholder="State"
+                disabled={!editing}
               />
             </div>
           </div>
@@ -190,27 +226,61 @@ export default function ProfilePage() {
               onChange={(e) => setFormData({ ...formData, pincode: e.target.value })}
               className="input w-32"
               placeholder="Pincode"
+              disabled={!editing}
             />
           </div>
 
-          <div className="pt-4">
-            <button
-              type="submit"
-              disabled={saving}
-              className="btn btn-primary"
-            >
-              {saving ? (
-                <>
-                  <span className="spinner" />
-                  Saving...
-                </>
-              ) : (
-                "Save Changes"
-              )}
-            </button>
-          </div>
+          {editing && (
+            <div className="pt-4 flex gap-3">
+              <button
+                type="submit"
+                disabled={saving}
+                className="btn btn-primary flex-1"
+              >
+                {saving ? (
+                  <>
+                    <span className="spinner !w-4 !h-4 !border-2" />
+                    Saving...
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    Save Changes
+                  </>
+                )}
+              </button>
+              <button
+                type="button"
+                onClick={cancelEditing}
+                disabled={saving}
+                className="btn btn-outline flex-1"
+              >
+                Cancel
+              </button>
+            </div>
+          )}
         </form>
       </div>
+
+      {/* Success Modal */}
+      <Modal isOpen={showSuccess} onClose={() => setShowSuccess(false)} title="Profile Updated">
+        <div className="text-center">
+          <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-success/10 flex items-center justify-center">
+            <svg className="w-8 h-8 text-success" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            </svg>
+          </div>
+          <p className="text-secondary mb-6">Your profile has been saved successfully.</p>
+          <button
+            onClick={() => setShowSuccess(false)}
+            className="btn btn-primary w-full"
+          >
+            OK
+          </button>
+        </div>
+      </Modal>
     </div>
   );
 }
