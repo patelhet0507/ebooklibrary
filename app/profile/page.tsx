@@ -7,7 +7,7 @@ import { api, User, UserProfileUpdate } from "@/lib/api";
 export const dynamic = "force-dynamic";
 
 export default function ProfilePage() {
-  const { user, setUser } = useAuth();
+  const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
@@ -25,7 +25,6 @@ export default function ProfilePage() {
     if (user) {
       api.profile.get(user.id).then((data) => {
         setProfile(data);
-        setUser(data);
         setFormData({
           name: data.name,
           phone: data.phone || "",
@@ -56,7 +55,7 @@ export default function ProfilePage() {
       };
       
       const updated = await api.profile.update(user.id, updateData);
-      setUser(updated);
+      setProfile(updated);
       setMessage({ type: "success", text: "Profile updated successfully!" });
     } catch (err) {
       setMessage({ type: "error", text: err instanceof Error ? err.message : "Failed to update profile" });
