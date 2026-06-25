@@ -8,7 +8,7 @@ export async function DELETE(
 ) {
   return withAuth(async (session) => {
     const { customer_id, book_id } = await params
-    if (session.role !== "CUSTOMER" && session.userId !== customer_id) {
+    if (session.userId !== customer_id) {
       return NextResponse.json({ detail: "Unauthorized" }, { status: 403 });
     }
 
@@ -17,5 +17,5 @@ export async function DELETE(
     })
 
     return new NextResponse(null, { status: 204 })
-  }, request, ["CUSTOMER"])
+  }, request)
 }

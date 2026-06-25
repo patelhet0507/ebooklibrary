@@ -2,15 +2,21 @@ import { prisma } from "@/lib/prisma"
 import { NextRequest, NextResponse } from "next/server"
 import { withAuth } from "@/lib/api-auth"
 
+async function checkOwnership(session: { userId: string }, customer_id: string) {
+  if (session.userId !== customer_id) {
+    return NextResponse.json({ detail: "Unauthorized" }, { status: 403 });
+  }
+  return null;
+}
+
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ customer_id: string }> }
 ) {
   return withAuth(async (session) => {
     const { customer_id } = await params
-    if (session.role !== "CUSTOMER" && session.userId !== customer_id) {
-      return NextResponse.json({ detail: "Unauthorized" }, { status: 403 });
-    }
+    const authErr = await checkOwnership(session, customer_id)
+    if (authErr) return authErr
 
     const wishlist = await prisma.wishlist.findMany({
       where: { user_id: customer_id },
@@ -19,7 +25,7 @@ export async function GET(
     })
 
     return NextResponse.json(wishlist)
-  }, request, ["CUSTOMER"])
+  }, request)
 }
 
 export async function POST(
@@ -28,9 +34,8 @@ export async function POST(
 ) {
   return withAuth(async (session) => {
     const { customer_id } = await params
-    if (session.role !== "CUSTOMER" && session.userId !== customer_id) {
-      return NextResponse.json({ detail: "Unauthorized" }, { status: 403 });
-    }
+    const authErr = await checkOwnership(session, customer_id)
+    if (authErr) return authErr
 
     const { book_id } = await request.json()
     if (!book_id) {
@@ -50,5 +55,5 @@ export async function POST(
     })
 
     return NextResponse.json(wishlist, { status: 201 })
-  }, request, ["CUSTOMER"])
+  }, request)
 }

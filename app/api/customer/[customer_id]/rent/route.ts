@@ -9,7 +9,7 @@ export async function POST(
 ) {
   return withAuth(async (session, req) => {
     const { customer_id } = await params
-    if (session.role !== "CUSTOMER" && session.userId !== customer_id) {
+    if (session.userId !== customer_id) {
       return NextResponse.json({ detail: "Unauthorized" }, { status: 403 });
     }
 
@@ -27,9 +27,9 @@ export async function POST(
         return NextResponse.json({ detail: "Rental days must be at least 1" }, { status: 400 });
       }
 
-      const customer = await prisma.user.findUnique({ where: { id: customer_id } })
-      if (!customer) {
-        return NextResponse.json({ detail: "Customer not found" }, { status: 404 });
+      const user = await prisma.user.findUnique({ where: { id: customer_id } })
+      if (!user) {
+        return NextResponse.json({ detail: "User not found" }, { status: 404 });
       }
 
       const rental_price = book.rental_price_per_day ?? book.price * 0.1
@@ -53,11 +53,11 @@ export async function POST(
         },
       })
 
-      sendRentConfirmation(customer.email, customer.name, book.title, total_amount, rental_days, due_date.toISOString())
+      sendRentConfirmation(user.email, user.name, book.title, total_amount, rental_days, due_date.toISOString())
 
       return NextResponse.json(transaction, { status: 201 });
     } catch (error) {
       return NextResponse.json({ detail: "Internal server error" }, { status: 500 });
     }
-  }, request, ["CUSTOMER"])
+  }, request)
 }

@@ -91,7 +91,7 @@ export default function CustomerBooks() {
   };
 
   const fetchWishlist = async () => {
-    if (!user || user.role !== "CUSTOMER") return;
+    if (!user) return;
     try {
       const data = await api.customer.wishlist.get(user.id);
       const ids = new Set(data.map(item => item.book.id));
@@ -117,7 +117,7 @@ export default function CustomerBooks() {
   };
 
   const toggleWishlist = async (bookId: string) => {
-    if (!user || user.role !== "CUSTOMER") return;
+    if (!user) return;
     setActionLoading("wishlist-" + bookId);
     try {
       if (wishlist.has(bookId)) {
@@ -341,7 +341,7 @@ export default function CustomerBooks() {
           {books.map((book, index) => (
             <div key={book.id} className="group card card-interactive p-0 animate-fade-in flex flex-col relative overflow-hidden" style={{ animationDelay: `${index * 0.04}s` }}>
               {/* Wishlist button */}
-              {user?.role === "CUSTOMER" && (
+              {user && (
                 <button
                   onClick={() => toggleWishlist(book.id)}
                   disabled={actionLoading === "wishlist-" + book.id}
@@ -425,32 +425,30 @@ export default function CustomerBooks() {
               </div>
               
               {/* Action buttons */}
-              {(!user || user.role === "CUSTOMER") && (
-                <div className="flex gap-2 px-5 pb-5">
-                  <button
-                    onClick={() => handlePurchase(book.id)}
-                    disabled={book.stock === 0 || actionLoading === book.id}
-                    className="btn btn-primary flex-1 text-sm py-2"
-                  >
-                    {actionLoading === book.id ? (
-                      <span className="spinner !w-4 !h-4 !border-2" />
-                    ) : (
-                      "Buy"
-                    )}
-                  </button>
-                  <button
-                    onClick={() => openRentModal(book)}
-                    disabled={book.stock === 0 || actionLoading === ("rent-" + book.id)}
-                    className="btn btn-outline flex-1 text-sm py-2"
-                  >
-                    {actionLoading === ("rent-" + book.id) ? (
-                      <span className="spinner !w-4 !h-4 !border-2" />
-                    ) : (
-                      "Rent"
-                    )}
-                  </button>
-                </div>
-              )}
+              <div className="flex gap-2 px-5 pb-5">
+                <button
+                  onClick={() => handlePurchase(book.id)}
+                  disabled={book.stock === 0 || actionLoading === book.id}
+                  className="btn btn-primary flex-1 text-sm py-2"
+                >
+                  {actionLoading === book.id ? (
+                    <span className="spinner !w-4 !h-4 !border-2" />
+                  ) : (
+                    "Buy"
+                  )}
+                </button>
+                <button
+                  onClick={() => openRentModal(book)}
+                  disabled={book.stock === 0 || actionLoading === ("rent-" + book.id)}
+                  className="btn btn-outline flex-1 text-sm py-2"
+                >
+                  {actionLoading === ("rent-" + book.id) ? (
+                    <span className="spinner !w-4 !h-4 !border-2" />
+                  ) : (
+                    "Rent"
+                  )}
+                </button>
+              </div>
             </div>
           ))}
         </div>
