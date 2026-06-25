@@ -38,6 +38,8 @@ export interface Book {
   images: BookImage[];
   created_at: string;
   updated_at?: string;
+  avg_rating?: number;
+  review_count?: number;
 }
 
 export interface BookImage {
@@ -289,6 +291,32 @@ export const api = {
       const query = searchParams.toString();
       return fetchApi<Book[]>(`/books${query ? `?${query}` : ""}`);
     },
+    search: (params?: {
+      q?: string;
+      author?: string;
+      language?: string;
+      minPrice?: number;
+      maxPrice?: number;
+      minRating?: number;
+      genre?: string;
+      skip?: number;
+      limit?: number;
+      sortBy?: "relevance" | "price_asc" | "price_desc" | "rating" | "newest" | "popular";
+    }) => {
+      const searchParams = new URLSearchParams();
+      if (params?.q) searchParams.set("q", params.q);
+      if (params?.author) searchParams.set("author", params.author);
+      if (params?.language) searchParams.set("language", params.language);
+      if (params?.minPrice) searchParams.set("minPrice", params.minPrice.toString());
+      if (params?.maxPrice) searchParams.set("maxPrice", params.maxPrice.toString());
+      if (params?.minRating) searchParams.set("minRating", params.minRating.toString());
+      if (params?.genre) searchParams.set("genre", params.genre);
+      if (params?.skip) searchParams.set("skip", params.skip.toString());
+      if (params?.limit) searchParams.set("limit", params.limit.toString());
+      if (params?.sortBy) searchParams.set("sortBy", params.sortBy);
+      const query = searchParams.toString();
+      return fetchApi<{ books: Book[]; total: number; skip: number; limit: number }>(`/books/search${query ? `?${query}` : ""}`);
+    },
     get: (id: string) => fetchApi<Book>(`/books/${id}`),
     getBySlug: (slug: string) => fetchApi<Book>(`/books/slug/${slug}`),
     getSeller: (bookId: string) => fetchApi<SellerContact>(`/books/${bookId}/seller`),
@@ -350,6 +378,25 @@ export const api = {
       fetchApi<{ message: string }>(`/customer/${customerId}/fines/${fineId}/pay`, { method: "PUT" }),
     getDashboard: (customerId: string) =>
       fetchApi<CustomerDashboard>(`/customer/${customerId}/dashboard`),
+    wishlist: {
+      get: (customerId: string) =>
+        fetchApi<{ book: Book }[]>(`/customer/${customerId}/wishlist`),
+      add: (customerId: string, bookId: string) =>
+        fetchApi<{ book: Book }>(`/customer/${customerId}/wishlist`, { method: "POST", body: JSON.stringify({ book_id: bookId }) }),
+      remove: (customerId: string, bookId: string) =>
+        fetchApi<void>(`/customer/${customerId}/wishlist/${bookId}`, { method: "DELETE" }),
+    },
+    notifications: {
+      get: (customerId: string, params?: { unread?: boolean; limit?: number }) => {
+        const searchParams = new URLSearchParams();
+        if (params?.unread) searchParams.set("unread", "true");
+        if (params?.limit) searchParams.set("limit", params.limit.toString());
+        const query = searchParams.toString();
+        return fetchApi<{ notifications: any[]; unreadCount: number }>(`/customer/${customerId}/notifications${query ? `?${query}` : ""}`);
+      },
+    },
+    markNotificationRead: (notificationId: string) =>
+      fetchApi<any>(`/notifications/${notificationId}/read`, { method: "PUT" }),
   },
   
   profile: {
@@ -415,5 +462,36 @@ export const api = {
       fetchApi<TopSeller[]>(`/moderator/top-sellers?period=${period}&limit=${limit}`),
     getDashboard: () =>
       fetchApi<ModeratorDashboard>("/moderator/dashboard"),
+    coupons: {
+      list: (params?: { skip?: number; limit?: number }) => {
+        const searchParams = new URLSearchParams();
+        if (params?.skip) searchParams.set("skip", params.skip.toString());
+        if (params?.limit) searchParams.set("limit", params.limit.toString());
+        const query = searchParams.toString();
+        return fetchApi<{ coupons: any[]; total: number; skip: number; limit: number }>(`/moderator/coupons${query ? `?${query}` : ""}`);
+      },
+      create: (data: any) =>
+        fetchApi<any>("/moderator/coupons", { method: "POST", body: JSON.stringify(data) }),
+      get: (id: string) =>
+        fetchApi<any>(`/moderator/coupons/${id}`),
+      update: (id: string, data: any) =>
+        fetchApi<any>(`/moderator/coupons/${id}`, { method: "PUT", body: JSON.stringify(data) }),
+      delete: (id: string) =>
+        fetchApi<void>(`/moderator/coupons/${id}`, { method: "DELETE" }),
+    },
+    analytics: {
+      get: (period?: string) =>
+        fetchApi<any>(`/moderator/analytics${period ? `?period=${period}` : ""}`),
+      overview: () =>
+        fetchApi<any>("/moderator/analytics/overview"),
+      revenue: (period?: string) =>
+        fetchApi<any>(`/moderator/analytics/revenue${period ? `?period=${period}` : ""}`),
+      users: (period?: string) =>
+        fetchApi<any>(`/moderator/analytics/users${period ? `?period=${period}` : ""}`),
+      topBooks: (limit?: number) =>
+        fetchApi<any>(`/moderator/analytics/top-books${limit ? `?limit=${limit}` : ""}`),
+      churn: (period?: string) =>
+        fetchApi<any>(`/moderator/analytics/churn${period ? `?period=${period}` : ""}`),
+    },
   },
 };

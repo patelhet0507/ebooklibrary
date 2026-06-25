@@ -24,11 +24,20 @@ export default function BookDetailPage() {
   const [hasReviewed, setHasReviewed] = useState(false);
   const [rentModal, setRentModal] = useState<{ days: number; total: number; dueDate: string } | null>(null);
   const [renting, setRenting] = useState(false);
+  const [inWishlist, setInWishlist] = useState(false);
+  const [wishlistLoading, setWishlistLoading] = useState(false);
 
   useEffect(() => {
     if (!id) return;
     api.books.getBySlug(id).catch(() => api.books.get(id)).then((bookData) => {
       setBook(bookData);
+      
+      if (user && user.role === "CUSTOMER") {
+        api.customer.wishlist.get(user.id)
+          .then(data => setInWishlist(data.some((item: any) => item.book.id === bookData.id)))
+          .catch(() => {});
+      }
+
       return api.reviews.list(bookData.id).then((reviewData) => {
         setReviews(reviewData);
         if (user) {
@@ -93,6 +102,26 @@ export default function BookDetailPage() {
     }
   };
 
+  const toggleWishlist = async () => {
+    if (!user || user.role !== "CUSTOMER" || !book) return;
+    setWishlistLoading(true);
+    try {
+      if (inWishlist) {
+        await api.customer.wishlist.remove(user.id, book.id);
+        setInWishlist(false);
+        setModalMessage({ type: "success", text: "Removed from wishlist" });
+      } else {
+        await api.customer.wishlist.add(user.id, book.id);
+        setInWishlist(true);
+        setModalMessage({ type: "success", text: "Added to wishlist" });
+      }
+    } catch (err) {
+      setModalMessage({ type: "error", text: "Failed to update wishlist" });
+    } finally {
+      setWishlistLoading(false);
+    }
+  };
+
   const handleSubmitReview = async () => {
     if (!user || !book) return;
     setSubmittingReview(true);
@@ -148,8 +177,24 @@ export default function BookDetailPage() {
             </div>
           )}
           <div className="flex-1">
-            <h1 className="text-3xl font-bold text-foreground mb-2">{book.title}</h1>
-            <p className="text-lg text-secondary mb-4">by {book.author}</p>
+            <div className="flex justify-between items-start gap-4">
+              <div>
+                <h1 className="text-3xl font-bold text-foreground mb-2">{book.title}</h1>
+                <p className="text-lg text-secondary mb-4">by {book.author}</p>
+              </div>
+              {user && user.role === "CUSTOMER" && (
+                <button
+                  onClick={toggleWishlist}
+                  disabled={wishlistLoading}
+                  className="p-2 hover:bg-muted/50 rounded-full transition-colors shrink-0"
+                  title={inWishlist ? "Remove from wishlist" : "Add to wishlist"}
+                >
+                  <svg className={`w-8 h-8 transition-colors ${inWishlist ? 'text-danger fill-current' : 'text-secondary'}`} viewBox="0 0 24 24" stroke="currentColor" fill={inWishlist ? "currentColor" : "none"}>
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                  </svg>
+                </button>
+              )}
+            </div>
 
             {(book.genre || book.language || book.isbn) && (
               <div className="flex flex-wrap gap-2 mb-6">
@@ -177,22 +222,24 @@ export default function BookDetailPage() {
               </span>
             </div>
 
-            <div className="flex gap-3">
-              <button
-                onClick={handlePurchase}
-                disabled={book.stock === 0 || purchasing}
-                className="btn btn-primary"
-              >
-                {purchasing ? "..." : `Buy ₹${book.price.toFixed(2)}`}
-              </button>
-              <button
-                onClick={openRentModal}
-                disabled={book.stock === 0 || renting}
-                className="btn btn-outline"
-              >
-                {renting ? "..." : `Rent ₹${(book.rental_price_per_day || book.price * 0.1).toFixed(2)}/day`}
-              </button>
-            </div>
+            {(!user || user.role === "CUSTOMER") && (
+              <div className="flex gap-3">
+                <button
+                  onClick={handlePurchase}
+                  disabled={book.stock === 0 || purchasing}
+                  className="btn btn-primary"
+                >
+                  {purchasing ? "..." : `Buy ₹${book.price.toFixed(2)}`}
+                </button>
+                <button
+                  onClick={openRentModal}
+                  disabled={book.stock === 0 || renting}
+                  className="btn btn-outline"
+                >
+                  {renting ? "..." : `Rent ₹${(book.rental_price_per_day || book.price * 0.1).toFixed(2)}/day`}
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </div>

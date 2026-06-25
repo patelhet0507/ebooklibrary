@@ -89,3 +89,28 @@ export function sendReturnRejectedNotification(customerEmail: string, customerNa
      <p>If you have questions, please contact the seller for more details.</p>`
   );
 }
+
+export function sendDueDateReminder(customerEmail: string, customerName: string, bookTitle: string, dueDate: string, daysLeft: number) {
+  const urgency = daysLeft <= 1 ? 'URGENT: ' : '';
+  sendEmail(
+    customerEmail,
+    `${urgency}Rental Due ${daysLeft === 0 ? 'Today' : `in ${daysLeft} day${daysLeft > 1 ? 's' : ''}`} - ${bookTitle}`,
+    `<h2>Rental Reminder, ${customerName}!</h2>
+     <p>Your rental of <strong>${bookTitle}</strong> is due on <strong>${dueDate}</strong>.</p>
+     ${daysLeft <= 1 ? '<p style="color:#ef4444;"><strong>⚠️ Please return it today to avoid late fees!</strong></p>' : `<p>You have <strong>${daysLeft} days</strong> remaining.</p>`}
+     <p>Log in to your dashboard to initiate a return request.</p>`
+  );
+}
+
+export function sendNewReleaseNotification(customerEmail: string, customerName: string, bookTitle: string, author: string, price: number) {
+  sendEmail(
+    customerEmail,
+    `New Release: ${bookTitle} by ${author}`,
+    `<h2>New Book Available, ${customerName}! 📚</h2>
+     <p>A new book has just been added to our library:</p>
+     <h3 style="color:#3b82f6;">${bookTitle}</h3>
+     <p>by <strong>${author}</strong></p>
+     <p><strong>Price:</strong> ₹${price.toFixed(2)}</p>
+     <p>Be among the first to read it — purchase or rent it today!</p>`
+  );
+}
