@@ -110,7 +110,7 @@ export default function ProfilePage() {
       <div className="card p-6">
         <form onSubmit={handleSubmit} className="space-y-6">
           {message && (
-            <div className={`p-4 rounded-lg ${message.type === "success" ? "bg-success/10 text-success" : "bg-error/10 text-error"}`}>
+            <div className={`p-4 rounded-lg ${message.type === "success" ? "bg-success/10 text-success" : "bg-danger/10 text-danger"}`}>
               {message.text}
             </div>
           )}
