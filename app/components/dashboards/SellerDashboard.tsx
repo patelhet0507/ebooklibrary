@@ -147,8 +147,8 @@ export default function SellerDashboard() {
             </svg>
           </div>
           <div>
-            <h3 className="font-semibold text-foreground">Return Requests</h3>
-            <p className="text-sm text-secondary">Approve customer returns</p>
+            <h3 className="font-semibold text-foreground">Returns & Refunds</h3>
+            <p className="text-sm text-secondary">Approve or reject customer requests</p>
           </div>
         </Link>
       </div>

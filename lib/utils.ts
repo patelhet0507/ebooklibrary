@@ -8,6 +8,17 @@ export function generateSlug(title: string): string {
   return title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "book";
 }
 
+export function debounce<T extends (...args: any[]) => any>(
+  fn: T,
+  delayMs: number
+): (...args: Parameters<T>) => void {
+  let timer: ReturnType<typeof setTimeout>;
+  return (...args: Parameters<T>) => {
+    clearTimeout(timer);
+    timer = setTimeout(() => fn(...args), delayMs);
+  };
+}
+
 export function parseGenres(genre: string | null | undefined): string[] {
   if (!genre) return [];
   try {

@@ -5,6 +5,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { stringifyGenres } from "@/lib/utils"
 import { withAuth } from "@/lib/api-auth"
 import { notifyUsersOnNewBook } from "@/lib/book-notify"
+import { cacheInvalidate, cacheDel } from "@/lib/cache"
 
 export async function GET(request: NextRequest) {
   return withAuth(async (session, req) => {
@@ -38,10 +39,15 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   return withAuth(async (session, req) => {
     const body = await req.json()
-    const slug = body.title
+    let slug = body.title
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, "-")
-      .replace(/(^-|-$)/g, "")
+      .replace(/(^-|-$)/g, "") || "book"
+
+    const existing = await prisma.book.findUnique({ where: { slug } })
+    if (existing) {
+      slug = `${slug}-${Date.now()}`
+    }
 
     const book = await prisma.book.create({
       data: {
@@ -63,6 +69,8 @@ export async function POST(request: NextRequest) {
     })
 
     notifyUsersOnNewBook(book.id)
+    cacheInvalidate("genres")
+    cacheInvalidate("languages")
 
     return NextResponse.json(book, { status: 201 })
   }, request, ["MODERATOR"])

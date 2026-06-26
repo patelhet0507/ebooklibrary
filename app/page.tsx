@@ -5,8 +5,11 @@ import { useState, useEffect } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { api, Book } from "@/lib/api";
 import { parseGenres } from "@/lib/utils";
+import { getRecentlyViewed, RecentlyViewedBook } from "@/lib/recently-viewed";
+import { Skeleton } from "@/app/components/Skeleton";
 import Modal from "@/app/components/Modal";
 import { useRouter } from "next/navigation";
+import EmptyState from "@/app/components/EmptyState";
 
 export default function Home() {
   const { user } = useAuth();
@@ -20,6 +23,10 @@ export default function Home() {
   const [search, setSearch] = useState("");
   const [genreFilter, setGenreFilter] = useState("");
   const [sortBy, setSortBy] = useState<"relevance" | "price_asc" | "price_desc" | "rating" | "newest" | "popular">("newest");
+
+  const [recentlyViewed, setRecentlyViewed] = useState<RecentlyViewedBook[]>([]);
+  const [recommended, setRecommended] = useState<Book[]>([]);
+  const [recommendedLoading, setRecommendedLoading] = useState(false);
 
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -70,13 +77,60 @@ export default function Home() {
     fetchBooks();
   }, [genreFilter, sortBy]);
 
+  useEffect(() => {
+    setRecentlyViewed(getRecentlyViewed());
+  }, []);
+
+  useEffect(() => {
+    (async () => {
+      setRecommendedLoading(true);
+      try {
+        const viewed = getRecentlyViewed();
+        let genreSet = new Set<string>();
+
+        for (const v of viewed) {
+          try {
+            const book = await api.books.get(v.id);
+            if (book.genre) {
+              parseGenres(book.genre).forEach((g) => genreSet.add(g));
+            }
+          } catch {}
+        }
+
+        if (user) {
+          const txns = await api.customer.getTransactions(user.id);
+          for (const t of txns.transactions) {
+            try {
+              const book = await api.books.get(t.book_id);
+              if (book.genre) {
+                parseGenres(book.genre).forEach((g) => genreSet.add(g));
+              }
+            } catch {}
+          }
+        }
+
+        if (genreSet.size > 0) {
+          const genres = Array.from(genreSet);
+          const allBooks = await api.books.search({ limit: 50 });
+          const matching = allBooks.books.filter(
+            (b) => b.genre && genres.some((g) => parseGenres(b.genre!).includes(g))
+          ).slice(0, 8);
+          const viewedIds = new Set(viewed.map((v) => v.id));
+          setRecommended(matching.filter((b) => !viewedIds.has(b.id)));
+        }
+      } catch {} finally {
+        setRecommendedLoading(false);
+      }
+    })();
+  }, [user]);
+
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     fetchBooks();
   };
 
   const handlePurchase = async (bookId: string) => {
-    if (!user) { router.push("/auth/login"); return; }
+    if (!user) { router.push(`/checkout?book_id=${bookId}&type=buy`); return; }
     setActionLoading(bookId);
     try {
       const transaction = await api.customer.purchase(user.id, { book_id: bookId, quantity: 1 });
@@ -90,7 +144,8 @@ export default function Home() {
   };
 
   const handleRent = async () => {
-    if (!user || !rentModal) { router.push("/auth/login"); return; }
+    if (!rentModal) return;
+    if (!user) { router.push(`/checkout?book_id=${rentModal.book.id}&type=rent&days=${rentModal.days}`); return; }
     const bookId = rentModal.book.id;
     setActionLoading("rent-" + bookId);
     setRentModal(null);
@@ -136,7 +191,7 @@ export default function Home() {
                   className="input flex-1" style={{ paddingLeft: "3rem" }}
                 />
               </div>
-              <button type="submit" className="btn btn-primary">Search</button>
+              <button type="submit" disabled={loading} className="btn btn-primary">{loading ? "Searching..." : "Search"}</button>
             </form>
 
             <div className="mt-6 flex flex-wrap justify-center gap-2">
@@ -169,6 +224,77 @@ export default function Home() {
 
       <div className="section-divider" />
 
+      {recentlyViewed.length > 0 && (
+        <section className="mb-12">
+          <h2 className="text-xl font-bold text-foreground mb-6 flex items-center gap-2">
+            <svg className="w-5 h-5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            Recently Viewed
+          </h2>
+          <div className="grid gap-4 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+            {recentlyViewed.map((book) => (
+              <Link
+                key={book.id}
+                href={`/books/${book.slug || book.id}`}
+                className="card card-interactive p-3 flex flex-col items-center text-center gap-2 group"
+              >
+                {book.cover_image ? (
+                  <div className="w-full aspect-[3/4] overflow-hidden rounded-lg bg-primary/[0.02]">
+                    <img src={book.cover_image} alt="" className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300" />
+                  </div>
+                ) : (
+                  <div className="w-full aspect-[3/4] rounded-lg bg-gradient-to-br from-primary/10 to-success/10 flex items-center justify-center">
+                    <svg className="w-8 h-8 text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                    </svg>
+                  </div>
+                )}
+                <p className="text-sm font-medium text-foreground line-clamp-2">{book.title}</p>
+                <p className="text-xs text-secondary">{book.author}</p>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {recommended.length > 0 && !recommendedLoading && (
+        <section className="mb-12">
+          <h2 className="text-xl font-bold text-foreground mb-6 flex items-center gap-2">
+            <svg className="w-5 h-5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+            </svg>
+            Recommended For You
+          </h2>
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+            {recommended.map((book) => (
+              <Link
+                key={book.id}
+                href={`/books/${book.slug || book.id}`}
+                className="card card-interactive p-0 overflow-hidden group"
+              >
+                {book.images?.find((i) => i.is_primary)?.url || book.cover_image ? (
+                  <div className="w-full overflow-hidden bg-primary/[0.02] max-h-48">
+                    <img
+                      src={book.images?.find((i) => i.is_primary)?.url || book.cover_image!}
+                      alt=""
+                      className="w-full h-48 object-contain group-hover:scale-105 transition-transform duration-300"
+                    />
+                  </div>
+                ) : (
+                  <div className="w-full h-32 bg-gradient-to-br from-primary/10 to-success/10" />
+                )}
+                <div className="p-4">
+                  <h3 className="font-semibold text-foreground line-clamp-1 group-hover:text-primary transition-colors">{book.title}</h3>
+                  <p className="text-sm text-secondary mt-1">{book.author}</p>
+                  <p className="text-lg font-bold text-success mt-3">₹{book.price.toFixed(2)}</p>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
+
       {/* ── Book Grid ── */}
       <section className="py-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -198,15 +324,15 @@ export default function Home() {
               <div className="spinner" />
             </div>
           ) : books.length === 0 ? (
-            <div className="card p-16 text-center">
-              <div className="w-20 h-20 mx-auto mb-6 rounded-2xl bg-primary/5 flex items-center justify-center">
-                <svg className="w-10 h-10 text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+            <EmptyState
+              icon={
+                <svg className="w-16 h-16 mx-auto text-muted mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
                 </svg>
-              </div>
-              <h3 className="text-xl font-semibold text-foreground mb-2">No books found</h3>
-              <p className="text-secondary">Try adjusting your search or filters.</p>
-            </div>
+              }
+              title="No books available"
+              description="Check back later for new arrivals."
+            />
           ) : (
             <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {books.map((book, index) => (

@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { api, CustomerDashboard as CustomerDashboardType, Transaction, Fine } from "@/lib/api";
 import Link from "next/link";
+import EmptyState from "@/app/components/EmptyState";
 
 export default function CustomerDashboard() {
   const { user } = useAuth();
@@ -20,7 +21,7 @@ export default function CustomerDashboard() {
         api.customer.getFines(user.id)
       ]).then(([statsData, transactionsData, finesData]) => {
         setStats(statsData);
-        setTransactions(transactionsData);
+        setTransactions(transactionsData.transactions);
         setFines(finesData);
       }).finally(() => setLoading(false));
     }
@@ -207,16 +208,16 @@ export default function CustomerDashboard() {
         </div>
         
         {recentTransactions.length === 0 ? (
-          <div className="p-12 text-center">
-            <svg className="w-16 h-16 mx-auto text-muted mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
-            </svg>
-            <h3 className="text-lg font-medium text-foreground mb-2">No activity yet</h3>
-            <p className="text-secondary mb-4">Start browsing books to make your first purchase or rental.</p>
-             <Link href="/browse" className="btn btn-primary">
-              Browse Books
-            </Link>
-          </div>
+          <EmptyState
+            icon={
+              <svg className="w-16 h-16 mx-auto text-muted mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+              </svg>
+            }
+            title="No activity yet"
+            description="Start browsing books to make your first purchase or rental."
+            action={{ label: "Browse Books", href: "/browse" }}
+          />
         ) : (
           <div className="table-container">
             <table className="table">
@@ -227,6 +228,7 @@ export default function CustomerDashboard() {
                   <th>Amount</th>
                   <th>Due Date</th>
                   <th>Status</th>
+                  <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -251,6 +253,16 @@ export default function CustomerDashboard() {
                         <span className="badge badge-warning">Active</span>
                       ) : (
                         <span className="badge badge-muted">-</span>
+                      )}
+                    </td>
+                    <td>
+                      {(t.type === "PURCHASE" || (t.type === "RENT" && !t.returned_at)) && (
+                        <Link href={`/read/${t.book_id}`} className="btn btn-ghost text-sm text-success">
+                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                          </svg>
+                          Read
+                        </Link>
                       )}
                     </td>
                   </tr>

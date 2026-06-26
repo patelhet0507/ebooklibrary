@@ -18,6 +18,7 @@ export interface User {
   pincode?: string;
   xp: number;
   level: number;
+  newsletter?: boolean;
   created_at: string;
 }
 
@@ -31,6 +32,7 @@ export interface Book {
   language?: string;
   genre?: string;
   cover_image?: string;
+  content_url?: string;
   price: number;
   rental_price_per_day?: number;
   stock: number;
@@ -53,6 +55,7 @@ export interface BookImage {
 export interface Transaction {
   id: string;
   book_id: string;
+  book_title?: string;
   customer_id: string;
   type: TransactionType;
   quantity: number;
@@ -102,6 +105,7 @@ export interface ReturnRequest {
   total_amount: number;
   rental_days?: number;
   due_date?: string;
+  refund_reason?: string;
   return_requested_at?: string;
   returned_at?: string;
   created_at: string;
@@ -223,6 +227,7 @@ export interface BookCreate {
   language?: string;
   genres?: string[];
   cover_image?: string;
+  content_url?: string;
   price: number;
   rental_price_per_day?: number;
   stock: number;
@@ -236,6 +241,7 @@ export interface BookUpdate {
   language?: string;
   genres?: string[];
   cover_image?: string;
+  content_url?: string;
   price?: number;
   rental_price_per_day?: number;
   stock?: number;
@@ -289,7 +295,7 @@ export const api = {
       if (params?.skip) searchParams.set("skip", params.skip.toString());
       if (params?.limit) searchParams.set("limit", params.limit.toString());
       const query = searchParams.toString();
-      return fetchApi<Book[]>(`/books${query ? `?${query}` : ""}`);
+      return fetchApi<{ books: Book[]; total: number; skip: number; limit: number }>(`/books${query ? `?${query}` : ""}`);
     },
     search: (params?: {
       q?: string;
@@ -363,6 +369,17 @@ export const api = {
         method: "POST",
         body: JSON.stringify({ reason }),
       }),
+    getRefundRequests: (sellerId: string) =>
+      fetchApi<ReturnRequest[]>(`/seller/${sellerId}/refund-requests`),
+    approveRefund: (sellerId: string, transactionId: string) =>
+      fetchApi<{ message: string }>(`/seller/${sellerId}/refund/${transactionId}/approve`, { method: "POST" }),
+    rejectRefund: (sellerId: string, transactionId: string, reason: string) =>
+      fetchApi<{ message: string }>(`/seller/${sellerId}/refund/${transactionId}/reject`, {
+        method: "POST",
+        body: JSON.stringify({ reason }),
+      }),
+    submitKYC: (sellerId: string, data: { businessName: string; gstin?: string; phone: string; address?: string; city?: string; state?: string; pincode?: string }) =>
+      fetchApi<{ message: string }>(`/seller/${sellerId}/kyc`, { method: "POST", body: JSON.stringify(data) }),
   },
   
   customer: {
@@ -372,8 +389,12 @@ export const api = {
       fetchApi<Transaction>(`/customer/${customerId}/rent`, { method: "POST", body: JSON.stringify(data) }),
     returnBook: (customerId: string, transactionId: string) =>
       fetchApi<Transaction>(`/customer/${customerId}/return/${transactionId}`, { method: "POST" }),
-    getTransactions: (customerId: string) =>
-      fetchApi<Transaction[]>(`/customer/${customerId}/transactions`),
+    getTransactions: (customerId: string, params?: { skip?: number; limit?: number; type?: string }) => {
+      const qs = params ? "?" + new URLSearchParams(
+        Object.fromEntries(Object.entries(params).filter(([_, v]) => v !== undefined).map(([k, v]) => [k, String(v)]))
+      ).toString() : ""
+      return fetchApi<{ transactions: Transaction[]; total: number; skip: number; take: number }>(`/customer/${customerId}/transactions${qs}`)
+    },
     getFines: (customerId: string) =>
       fetchApi<Fine[]>(`/customer/${customerId}/fines`),
     payFine: (customerId: string, fineId: string) =>

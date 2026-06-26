@@ -7,10 +7,12 @@ import { useAuth } from "@/lib/auth-context";
 import { api, Book } from "@/lib/api";
 import { parseGenres } from "@/lib/utils";
 import Modal from "@/app/components/Modal";
+import EmptyState from "@/app/components/EmptyState";
 
 export default function CustomerWishlist() {
   const { user } = useAuth();
   const router = useRouter();
+  useEffect(() => { document.title = "My Wishlist | E-Book Library"; }, []);
   const [books, setBooks] = useState<Book[]>([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
@@ -61,7 +63,7 @@ export default function CustomerWishlist() {
   };
 
   const handlePurchase = async (bookId: string) => {
-    if (!user) return;
+    if (!user) { router.push(`/checkout?book_id=${bookId}&type=buy`); return; }
     setActionLoading(bookId);
     try {
       const transaction = await api.customer.purchase(user.id, { book_id: bookId, quantity: 1 });
@@ -74,7 +76,8 @@ export default function CustomerWishlist() {
   };
 
   const handleRent = async () => {
-    if (!user || !rentModal) return;
+    if (!rentModal) return;
+    if (!user) { router.push(`/checkout?book_id=${rentModal.book.id}&type=rent&days=${rentModal.days}`); return; }
     const bookId = rentModal.book.id;
     setActionLoading("rent-" + bookId);
     setRentModal(null);
@@ -122,20 +125,20 @@ export default function CustomerWishlist() {
       </div>
 
       {books.length === 0 ? (
-        <div className="card p-12 text-center">
-          <svg className="w-16 h-16 mx-auto text-muted mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-          </svg>
-          <h3 className="text-lg font-medium text-foreground mb-2">Your wishlist is empty</h3>
-          <p className="text-secondary mb-6">Browse our collection and save books you're interested in.</p>
-          <Link href="/browse" className="btn btn-primary">
-            Browse Books
-          </Link>
-        </div>
+        <EmptyState
+          icon={
+            <svg className="w-16 h-16 mx-auto text-muted mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+            </svg>
+          }
+          title="Your wishlist is empty"
+          description="Browse our collection and save books you're interested in."
+          action={{ label: "Browse Books", href: "/browse" }}
+        />
       ) : (
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {books.map((book, index) => (
-            <div key={book.id} className="card card-interactive p-0 animate-fade-in flex flex-col relative" style={{ animationDelay: `${index * 0.05}s` }}>
+            <div key={book.id} className="card card-interactive p-0 animate-fade-in flex flex-col relative">
               <button
                 onClick={() => handleRemoveFromWishlist(book.id)}
                 disabled={actionLoading === "remove-" + book.id}
@@ -232,6 +235,7 @@ export default function CustomerWishlist() {
                 value={rentModal.days}
                 onChange={e => updateRentDays(parseInt(e.target.value) || 1)}
                 className="input"
+                aria-label="Number of days to rent"
               />
             </div>
 
@@ -256,7 +260,7 @@ export default function CustomerWishlist() {
 
             <div className="flex gap-3">
               <button onClick={() => setRentModal(null)} className="btn btn-outline flex-1">Cancel</button>
-              <button onClick={handleRent} className="btn btn-primary flex-1">Confirm Rent</button>
+              <button onClick={handleRent} disabled={rentModal && actionLoading === ("rent-" + rentModal.book.id)} className="btn btn-primary flex-1">{rentModal && actionLoading === ("rent-" + rentModal.book.id) ? "Processing..." : "Confirm Rent"}</button>
             </div>
           </>
         )}

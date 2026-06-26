@@ -14,6 +14,7 @@ function PaymentPageContent() {
   const searchParams = useSearchParams();
   const transactionId = searchParams.get("transactionId");
   const paidInSession = useRef(false);
+  useEffect(() => { document.title = "Payment | E-Book Library"; }, []);
   
   const [transaction, setTransaction] = useState<Transaction | null>(null);
   const [book, setBook] = useState<Book | null>(null);
@@ -31,11 +32,16 @@ function PaymentPageContent() {
   });
   const [modalMessage, setModalMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [successPaymentId, setSuccessPaymentId] = useState<string | null>(null);
+  const [couponCode, setCouponCode] = useState("");
+  const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; discount: number; type: string } | null>(null);
+  const [couponError, setCouponError] = useState("");
+  const [couponLoading, setCouponLoading] = useState(false);
+  const [couponValidating, setCouponValidating] = useState(false);
 
   useEffect(() => {
     if (transactionId && user && !paidInSession.current) {
-      api.customer.getTransactions(user.id).then(transactions => {
-        const t = transactions.find(tr => tr.id === transactionId);
+      api.customer.getTransactions(user.id).then(data => {
+        const t = data.transactions.find(tr => tr.id === transactionId);
         if (t) {
           setTransaction(t);
           api.payments.getUserPayments(user.id).then(payments => {
@@ -50,7 +56,43 @@ function PaymentPageContent() {
         }
       }).catch(() => setLoading(false));
     }
-  }, [transactionId, user, router]);
+    }, [transactionId, user, router]);
+
+  const discountedAmount = appliedCoupon
+    ? appliedCoupon.type === "PERCENTAGE"
+      ? (transaction?.total_amount || 0) * (1 - appliedCoupon.discount / 100)
+      : Math.max(0, (transaction?.total_amount || 0) - appliedCoupon.discount)
+    : transaction?.total_amount || 0;
+
+  useEffect(() => {
+    if (!couponCode.trim()) { setAppliedCoupon(null); setCouponError(""); return; }
+    const timer = setTimeout(async () => {
+      setCouponLoading(true);
+      setCouponValidating(true);
+      try {
+        const res = await fetch("/api/coupons/validate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ code: couponCode, amount: transaction?.total_amount || 0 }),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setAppliedCoupon(data);
+          setCouponError("");
+        } else {
+          const err = await res.json();
+          setAppliedCoupon(null);
+          setCouponError(err.detail || "Invalid coupon");
+        }
+      } catch {
+        setAppliedCoupon(null);
+        setCouponError("Failed to validate coupon");
+      }
+      setCouponLoading(false);
+      setCouponValidating(false);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [couponCode, transaction]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -116,9 +158,37 @@ function PaymentPageContent() {
             <p className="text-sm text-secondary">Qty: {transaction.quantity}</p>
           </div>
           <div className="text-right">
-            <p className="text-xl font-bold text-success">₹{transaction.total_amount.toFixed(2)}</p>
+            {appliedCoupon ? (
+              <>
+                <p className="text-sm text-muted line-through">₹{transaction.total_amount.toFixed(2)}</p>
+                <p className="text-xl font-bold text-success">₹{discountedAmount.toFixed(2)}</p>
+              </>
+            ) : (
+              <p className="text-xl font-bold text-success">₹{transaction.total_amount.toFixed(2)}</p>
+            )}
           </div>
         </div>
+      </div>
+
+      <div className="card p-4 mb-4">
+        <label className="block text-sm font-medium text-foreground mb-2">Coupon Code</label>
+        <div className="flex gap-2">
+          <input
+            type="text"
+            value={couponCode}
+            onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+            placeholder="Enter coupon code"
+            className="input flex-1 uppercase"
+            disabled={couponValidating}
+          />
+          {couponLoading && <div className="flex items-center"><div className="spinner w-5 h-5" /></div>}
+        </div>
+        {appliedCoupon && (
+          <p className="text-success text-sm mt-2">
+            Coupon applied! {appliedCoupon.type === "PERCENTAGE" ? `${appliedCoupon.discount}% off` : `₹${appliedCoupon.discount} off`}
+          </p>
+        )}
+        {couponError && <p className="text-danger text-sm mt-2">{couponError}</p>}
       </div>
 
       <div className="card p-6 mb-8">
@@ -280,7 +350,7 @@ function PaymentPageContent() {
                 </>
               ) : (
                 <>
-                  Pay ₹{transaction.total_amount.toFixed(2)}
+                  Pay ₹{discountedAmount.toFixed(2)}
                 </>
               )}
             </button>

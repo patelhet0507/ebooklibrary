@@ -7,15 +7,20 @@ import { parseGenres } from "@/lib/utils";
 import Link from "next/link";
 import Modal from "@/app/components/Modal";
 import ImageManager from "@/app/components/ImageManager";
+import EmptyState from "@/app/components/EmptyState";
+
+const ITEMS_PER_PAGE = 10;
 
 export default function SellerBooks() {
   const { user } = useAuth();
+  useEffect(() => { document.title = "My Books | E-Book Library"; }, []);
   const [books, setBooks] = useState<Book[]>([]);
   const [loading, setLoading] = useState(true);
   const [showStockModal, setShowStockModal] = useState<string | null>(null);
   const [stockQuantity, setStockQuantity] = useState(1);
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
   const [manageImagesBookId, setManageImagesBookId] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
 
   useEffect(() => {
     if (user) {
@@ -43,6 +48,9 @@ export default function SellerBooks() {
     setStockQuantity(1);
   };
 
+  const totalPages = Math.ceil(books.length / ITEMS_PER_PAGE);
+  const paginatedData = books.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE);
+
   if (loading) return (
     <div className="flex items-center justify-center min-h-[50vh]">
       <div className="spinner" />
@@ -65,16 +73,16 @@ export default function SellerBooks() {
       </div>
 
       {books.length === 0 ? (
-        <div className="card p-12 text-center">
-          <svg className="w-16 h-16 mx-auto text-muted mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-          </svg>
-          <h3 className="text-lg font-medium text-foreground mb-2">No books yet</h3>
-          <p className="text-secondary mb-6">Start by adding your first book to the inventory.</p>
-        <Link href="/my-books/new" className="btn btn-primary">
-            Add Your First Book
-          </Link>
-        </div>
+        <EmptyState
+          icon={
+            <svg className="w-16 h-16 mx-auto text-muted mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+            </svg>
+          }
+          title="No books yet"
+          description="Start by adding your first book to the inventory."
+          action={{ label: "Add Your First Book", href: "/my-books/new" }}
+        />
       ) : (
         <div className="table-container">
           <table className="table">
@@ -89,7 +97,7 @@ export default function SellerBooks() {
               </tr>
             </thead>
             <tbody>
-              {books.map((book) => (
+              {paginatedData.map((book) => (
                 <tr key={book.id}>
                   <td className="font-medium">{book.title}</td>
                   <td className="text-secondary">{book.author}</td>
@@ -130,6 +138,30 @@ export default function SellerBooks() {
               ))}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between px-6 py-4 border-t border-border">
+          <p className="text-sm text-secondary">
+            Page {page} of {totalPages}
+          </p>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setPage(p => Math.max(1, p - 1))}
+              disabled={page === 1}
+              className="btn btn-outline btn-sm"
+            >
+              Previous
+            </button>
+            <button
+              onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+              disabled={page === totalPages}
+              className="btn btn-outline btn-sm"
+            >
+              Next
+            </button>
+          </div>
         </div>
       )}
 

@@ -5,6 +5,7 @@ import { randomUUID } from "crypto"
 import { stringifyGenres } from "@/lib/utils"
 import { withAuth } from "@/lib/api-auth"
 import { notifyUsersOnNewBook } from "@/lib/book-notify"
+import { cacheInvalidate } from "@/lib/cache"
 
 export async function GET(
   request: NextRequest,
@@ -57,6 +58,8 @@ export async function POST(
         },
       })
       notifyUsersOnNewBook(book.id)
+      cacheInvalidate("genres")
+      cacheInvalidate("languages")
       return NextResponse.json(book, { status: 201 });
     } catch (error) {
       const message = error instanceof Error ? error.message : "Failed to create book"

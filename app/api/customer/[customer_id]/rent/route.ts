@@ -7,14 +7,14 @@ export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ customer_id: string }> }
 ) {
-  return withAuth(async (session, req) => {
+  return withAuth(async (session) => {
     const { customer_id } = await params
-    if (session.userId !== customer_id) {
+    if (session.role !== "CUSTOMER" && session.userId !== customer_id) {
       return NextResponse.json({ detail: "Unauthorized" }, { status: 403 });
     }
 
     try {
-      const { book_id, quantity, rental_days } = await req.json()
+      const { book_id, quantity, rental_days } = await request.json()
 
       const book = await prisma.book.findUnique({ where: { id: book_id } })
       if (!book) {
@@ -27,9 +27,9 @@ export async function POST(
         return NextResponse.json({ detail: "Rental days must be at least 1" }, { status: 400 });
       }
 
-      const user = await prisma.user.findUnique({ where: { id: customer_id } })
-      if (!user) {
-        return NextResponse.json({ detail: "User not found" }, { status: 404 });
+      const customer = await prisma.user.findUnique({ where: { id: customer_id } })
+      if (!customer) {
+        return NextResponse.json({ detail: "Customer not found" }, { status: 404 });
       }
 
       const rental_price = book.rental_price_per_day ?? book.price * 0.1
@@ -53,7 +53,7 @@ export async function POST(
         },
       })
 
-      sendRentConfirmation(user.email, user.name, book.title, total_amount, rental_days, due_date.toISOString())
+      sendRentConfirmation(customer.email, customer.name, book.title, total_amount, rental_days, due_date.toISOString())
 
       return NextResponse.json(transaction, { status: 201 });
     } catch (error) {

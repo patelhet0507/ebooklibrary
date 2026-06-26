@@ -3,8 +3,10 @@
 import { useState, useEffect } from "react";
 import { api, ReturnRequest } from "@/lib/api";
 import Modal from "@/app/components/Modal";
+import EmptyState from "@/app/components/EmptyState";
 
 export default function ModeratorReturns() {
+  useEffect(() => { document.title = "Book Returns | E-Book Library"; }, []);
   const [pendingReturns, setPendingReturns] = useState<ReturnRequest[]>([]);
   const [completedReturns, setCompletedReturns] = useState<ReturnRequest[]>([]);
   const [loading, setLoading] = useState(true);
@@ -87,14 +89,15 @@ export default function ModeratorReturns() {
       </div>
 
       {currentReturns.length === 0 ? (
-        <div className="card p-12 text-center">
-          <h3 className="text-lg font-medium text-foreground mb-2">
-            No {activeTab} returns
-          </h3>
-          <p className="text-secondary">
-            {activeTab === "pending" ? "No return requests pending." : "No completed returns yet."}
-          </p>
-        </div>
+        <EmptyState
+          icon={
+            <svg className="w-16 h-16 mx-auto text-muted mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+          }
+          title={`No ${activeTab} returns`}
+          description={activeTab === "pending" ? "No return requests pending." : "No completed returns yet."}
+        />
       ) : (
         <div className="table-container">
           <table className="table">

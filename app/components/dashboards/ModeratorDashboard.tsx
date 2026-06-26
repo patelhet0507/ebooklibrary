@@ -5,6 +5,7 @@ import { useAuth } from "@/lib/auth-context";
 import { api, ModeratorDashboard as ModeratorDashboardType, TopSeller, ReturnRequest } from "@/lib/api";
 import Link from "next/link";
 import Modal from "@/app/components/Modal";
+import EmptyState from "@/app/components/EmptyState";
 
 export default function ModeratorDashboard() {
   useAuth();
@@ -315,13 +316,15 @@ export default function ModeratorDashboard() {
         </div>
 
         {topSellers.length === 0 ? (
-          <div className="p-12 text-center">
-            <svg className="w-16 h-16 mx-auto text-muted mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-            </svg>
-            <h3 className="text-lg font-medium text-foreground mb-2">No sales data</h3>
-            <p className="text-secondary">No sales recorded for this period.</p>
-          </div>
+          <EmptyState
+            icon={
+              <svg className="w-16 h-16 mx-auto text-muted mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+              </svg>
+            }
+            title="No sales data"
+            description="No sales recorded for this period."
+          />
         ) : (
           <div className="table-container">
             <table className="table">

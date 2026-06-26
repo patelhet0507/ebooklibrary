@@ -19,6 +19,7 @@ model User {
   pincode   String?
   xp        Int      @default(0)
   level     Int      @default(1)
+  newsletter Boolean  @default(false)
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
 
@@ -31,8 +32,31 @@ model User {
   wishlist     Wishlist[]
   coupons      CouponUsage[]
   notifications Notification[]
+  sellerVerification SellerVerification?
 
+  @@index([role])
+  @@index([role, created_at])
   @@map("users")
+}
+
+model SellerVerification {
+  id            String   @id @default(uuid())
+  seller_id     String   @unique
+  business_name String
+  gstin         String?
+  phone         String
+  address       String?
+  city          String?
+  state         String?
+  pincode       String?
+  status        String   @default("PENDING") // "PENDING" | "APPROVED" | "REJECTED"
+  rejection_reason String?
+  created_at    DateTime @default(now())
+  updated_at    DateTime @updatedAt
+
+  seller User @relation(fields: [seller_id], references: [id], onDelete: Cascade)
+
+  @@map("seller_verifications")
 }
 
 model Book {
@@ -45,6 +69,7 @@ model Book {
   language          String?
   genre            String?
   cover_image       String?
+  content_url       String?
   price             Float
   rental_price_per_day Float?
   stock             Int      @default(0)
@@ -60,6 +85,13 @@ model Book {
   images       BookImage[]
   wishlist     Wishlist[]
 
+  @@index([seller_id])
+  @@index([price])
+  @@index([avg_rating])
+  @@index([review_count])
+  @@index([created_at])
+  @@index([language])
+  @@index([genre])
   @@map("books")
 }
 
@@ -72,6 +104,8 @@ model BookImage {
 
   book Book @relation(fields: [book_id], references: [id], onDelete: Cascade)
 
+  @@index([book_id])
+  @@index([book_id, is_primary])
   @@map("book_images")
 }
 
@@ -86,6 +120,7 @@ model Transaction {
   due_date            DateTime?
   returned_at         DateTime?
   return_requested_at DateTime?
+  refund_reason       String?
   coupon_id           String?
   created_at          DateTime @default(now())
 
@@ -96,6 +131,13 @@ model Transaction {
   coupon         Coupon?   @relation(fields: [coupon_id], references: [id], onDelete: SetNull)
   couponUsages   CouponUsage[]
 
+  @@index([book_id])
+  @@index([customer_id])
+  @@index([coupon_id])
+  @@index([type])
+  @@index([type, created_at])
+  @@index([type, customer_id])
+  @@index([type, return_requested_at, returned_at])
   @@map("transactions")
 }
 
@@ -112,6 +154,11 @@ model Fine {
   transaction Transaction @relation(fields: [transaction_id], references: [id], onDelete: Cascade)
   user        User        @relation(fields: [user_id], references: [id], onDelete: Cascade)
 
+  @@index([transaction_id])
+  @@index([user_id])
+  @@index([status])
+  @@index([status, created_at])
+  @@index([user_id, created_at])
   @@map("fines")
 }
 
@@ -125,6 +172,8 @@ model Commission {
 
   seller User @relation(fields: [seller_id], references: [id], onDelete: Cascade)
 
+  @@index([seller_id])
+  @@index([seller_id, created_at])
   @@map("commissions")
 }
 
@@ -147,6 +196,8 @@ model Payment {
   transaction Transaction @relation(fields: [transaction_id], references: [id], onDelete: Cascade)
   user        User        @relation(fields: [user_id], references: [id], onDelete: Cascade)
 
+  @@index([user_id])
+  @@index([user_id, created_at])
   @@map("payments")
 }
 
@@ -161,6 +212,10 @@ model Review {
   book Book @relation(fields: [book_id], references: [id], onDelete: Cascade)
   user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
 
+  @@index([book_id])
+  @@index([user_id])
+  @@index([book_id, user_id])
+  @@index([book_id, created_at])
   @@map("reviews")
 }
 
@@ -174,6 +229,8 @@ model Wishlist {
   book Book @relation(fields: [book_id], references: [id], onDelete: Cascade)
 
   @@unique([user_id, book_id])
+  @@index([user_id])
+  @@index([book_id])
   @@map("wishlist")
 }
 
@@ -211,6 +268,9 @@ model CouponUsage {
   transaction Transaction? @relation(fields: [transaction_id], references: [id], onDelete: SetNull)
 
   @@unique([coupon_id, user_id])
+  @@index([coupon_id])
+  @@index([user_id])
+  @@index([transaction_id])
   @@map("coupon_usages")
 }
 
@@ -226,6 +286,10 @@ model Notification {
 
   user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
 
+  @@index([user_id])
+  @@index([is_read])
+  @@index([user_id, is_read, created_at])
+  @@index([user_id, created_at])
   @@map("notifications")
 }
 
@@ -237,5 +301,9 @@ model AnalyticsEvent {
   data      String?  // JSON
   created_at DateTime @default(now())
 
+  @@index([user_id])
+  @@index([book_id])
+  @@index([event_type])
+  @@index([event_type, created_at])
   @@map("analytics_events")
 }

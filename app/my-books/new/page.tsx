@@ -15,6 +15,7 @@ const COMMON_GENRES = [
 export default function NewBookPage() {
   const { user } = useAuth();
   const router = useRouter();
+  useEffect(() => { document.title = "Add Book | E-Book Library"; }, []);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [availableGenres, setAvailableGenres] = useState<string[]>([]);
@@ -27,6 +28,7 @@ export default function NewBookPage() {
     language: undefined,
     genres: [],
     cover_image: undefined,
+    content_url: undefined,
     price: 0,
     rental_price_per_day: undefined,
     stock: 0,
@@ -68,6 +70,7 @@ export default function NewBookPage() {
         language: formData.language || undefined,
         genres: formData.genres?.length ? formData.genres : undefined,
         cover_image: formData.cover_image || undefined,
+        content_url: formData.content_url || undefined,
       };
       await api.seller.createBook(user.id, data);
       router.push("/my-books");
@@ -240,6 +243,18 @@ export default function NewBookPage() {
             value={formData.cover_image || ""}
             onChange={(v) => setFormData({ ...formData, cover_image: v || undefined })}
           />
+
+          <div>
+            <label className="block text-sm font-medium text-foreground mb-1">Book Content URL</label>
+            <input
+              type="url"
+              value={formData.content_url || ""}
+              onChange={(e) => setFormData({ ...formData, content_url: e.target.value || undefined })}
+              className="input"
+              placeholder="https://example.com/book.pdf"
+            />
+            <p className="text-xs text-muted mt-1">Link to the PDF or ePub file for the book</p>
+          </div>
 
           <div className="flex gap-4 pt-4">
             <button

@@ -4,6 +4,9 @@ import "./globals.css";
 import { AuthProvider } from "@/lib/auth-context";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
+import { ToastProvider } from "./components/Toast";
+import ErrorBoundary from "./components/ErrorBoundary";
+import { ThemeProvider } from "./components/ThemeToggle";
 
 const plusJakartaSans = Plus_Jakarta_Sans({
   variable: "--font-sans",
@@ -27,11 +30,17 @@ export default function RootLayout({
       className={`${plusJakartaSans.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col font-sans">
-        <AuthProvider>
-          <Navbar />
-          <main className="flex-1">{children}</main>
-          <Footer />
-        </AuthProvider>
+        <ThemeProvider>
+          <AuthProvider>
+            <ToastProvider>
+              <Navbar />
+              <ErrorBoundary>
+                <main className="flex-1">{children}</main>
+              </ErrorBoundary>
+              <Footer />
+            </ToastProvider>
+          </AuthProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

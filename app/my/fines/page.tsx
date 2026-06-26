@@ -4,14 +4,17 @@ import { useState, useEffect } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { api, Fine } from "@/lib/api";
 import Modal from "@/app/components/Modal";
+import { useToast } from "@/app/components/Toast";
+import EmptyState from "@/app/components/EmptyState";
 
 export default function CustomerFines() {
   const { user } = useAuth();
+  const { toast } = useToast();
+  useEffect(() => { document.title = "My Fines | E-Book Library"; }, []);
   const [fines, setFines] = useState<Fine[]>([]);
   const [loading, setLoading] = useState(true);
   const [paying, setPaying] = useState<string | null>(null);
   const [confirmPay, setConfirmPay] = useState<string | null>(null);
-  const [modalMessage, setModalMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
   useEffect(() => {
     if (user) {
@@ -26,9 +29,9 @@ export default function CustomerFines() {
     try {
       await api.customer.payFine(user.id, fineId);
       setFines(fines.map(f => f.id === fineId ? { ...f, status: "PAID", paid_at: new Date().toISOString() } : f));
-      setModalMessage({ type: "success", text: "Fine paid successfully!" });
+      toast("success", "Fine paid successfully!");
     } catch (err) {
-      setModalMessage({ type: "error", text: err instanceof Error ? err.message : "Payment failed" });
+      toast("error", err instanceof Error ? err.message : "Payment failed");
     } finally {
       setPaying(null);
     }
@@ -62,13 +65,15 @@ export default function CustomerFines() {
       )}
 
       {fines.length === 0 ? (
-        <div className="card p-12 text-center">
-          <svg className="w-16 h-16 mx-auto text-success mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-          <h3 className="text-lg font-medium text-foreground mb-2">All clear!</h3>
-          <p className="text-secondary">You have no fines. Keep it up!</p>
-        </div>
+        <EmptyState
+          icon={
+            <svg className="w-16 h-16 mx-auto text-success mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          }
+          title="All clear!"
+          description="You have no fines. Keep it up!"
+        />
       ) : (
         <div className="table-container">
           <table className="table">
@@ -139,11 +144,6 @@ export default function CustomerFines() {
         </div>
       </Modal>
 
-      {/* Success/Error Modal */}
-      <Modal isOpen={!!modalMessage} onClose={() => setModalMessage(null)} title={modalMessage?.type === "success" ? "Success" : "Error"}>
-        <p className="text-secondary mb-6">{modalMessage?.text}</p>
-        <button onClick={() => setModalMessage(null)} className="btn btn-primary w-full">OK</button>
-      </Modal>
     </div>
   );
 }

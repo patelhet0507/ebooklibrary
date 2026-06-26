@@ -10,6 +10,7 @@ function InvoicePageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const paymentId = searchParams.get("paymentId");
+  useEffect(() => { document.title = "Invoice | E-Book Library"; }, []);
   const [invoice, setInvoice] = useState<Invoice | null>(null);
   const [loading, setLoading] = useState(true);
   const [invoiceError, setInvoiceError] = useState<string | null>(null);

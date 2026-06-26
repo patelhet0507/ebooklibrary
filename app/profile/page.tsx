@@ -9,6 +9,7 @@ export const dynamic = "force-dynamic";
 
 export default function ProfilePage() {
   const { user } = useAuth();
+  useEffect(() => { document.title = "Profile | E-Book Library"; }, []);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [editing, setEditing] = useState(false);

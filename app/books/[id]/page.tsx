@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 import { api, Book, Review } from "@/lib/api";
 import { parseGenres } from "@/lib/utils";
+import { addRecentlyViewed } from "@/lib/recently-viewed";
 import Modal from "@/app/components/Modal";
 import Barcode from "@/app/components/Barcode";
 
@@ -30,8 +31,14 @@ export default function BookDetailPage() {
   useEffect(() => {
     if (!id) return;
     api.books.getBySlug(id).catch(() => api.books.get(id)).then((bookData) => {
+      if (bookData.slug && id !== bookData.slug) {
+        router.replace(`/books/${bookData.slug}`);
+        return;
+      }
       setBook(bookData);
-      
+      document.title = `${bookData.title} | E-Book Library`;
+      addRecentlyViewed({ id: bookData.id, slug: bookData.slug, title: bookData.title, author: bookData.author, cover_image: bookData.cover_image });
+
       if (user && user.role === "CUSTOMER") {
         api.customer.wishlist.get(user.id)
           .then(data => setInWishlist(data.some((item: any) => item.book.id === bookData.id)))
@@ -48,7 +55,8 @@ export default function BookDetailPage() {
   }, [id, user]);
 
   const handlePurchase = async () => {
-    if (!user || !book) return;
+    if (!book) return;
+    if (!user) { router.push(`/checkout?book_id=${book.id}&type=buy`); return; }
     setPurchasing(true);
     try {
       const transaction = await api.customer.purchase(user.id, { book_id: book.id, quantity: 1 });
@@ -84,7 +92,8 @@ export default function BookDetailPage() {
   };
 
   const handleRent = async () => {
-    if (!user || !book || !rentModal) return;
+    if (!book || !rentModal) return;
+    if (!user) { router.push(`/checkout?book_id=${book.id}&type=rent&days=${rentModal.days}`); return; }
     setRenting(true);
     setRentModal(null);
     try {
@@ -222,24 +231,22 @@ export default function BookDetailPage() {
               </span>
             </div>
 
-            {(!user || user.role === "CUSTOMER") && (
-              <div className="flex gap-3">
-                <button
-                  onClick={handlePurchase}
-                  disabled={book.stock === 0 || purchasing}
-                  className="btn btn-primary"
-                >
-                  {purchasing ? "..." : `Buy ₹${book.price.toFixed(2)}`}
-                </button>
-                <button
-                  onClick={openRentModal}
-                  disabled={book.stock === 0 || renting}
-                  className="btn btn-outline"
-                >
-                  {renting ? "..." : `Rent ₹${(book.rental_price_per_day || book.price * 0.1).toFixed(2)}/day`}
-                </button>
-              </div>
-            )}
+            <div className="flex gap-3">
+              <button
+                onClick={handlePurchase}
+                disabled={book.stock === 0 || purchasing}
+                className="btn btn-primary"
+              >
+                {purchasing ? "..." : `Buy ₹${book.price.toFixed(2)}`}
+              </button>
+              <button
+                onClick={openRentModal}
+                disabled={book.stock === 0 || renting}
+                className="btn btn-outline"
+              >
+                {renting ? "..." : `Rent ₹${(book.rental_price_per_day || book.price * 0.1).toFixed(2)}/day`}
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -404,7 +411,7 @@ export default function BookDetailPage() {
 
             <div className="flex gap-3">
               <button onClick={() => setRentModal(null)} className="btn btn-outline flex-1">Cancel</button>
-              <button onClick={handleRent} className="btn btn-primary flex-1">Confirm Rent</button>
+              <button onClick={handleRent} disabled={renting} className="btn btn-primary flex-1">{renting ? "Processing..." : "Confirm Rent"}</button>
             </div>
           </>
         )}

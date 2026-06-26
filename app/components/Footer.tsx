@@ -1,6 +1,22 @@
+"use client";
+
+import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/lib/auth-context";
+import { useToast } from "@/app/components/Toast";
+import { isSubscribed, setSubscribed } from "@/lib/newsletter";
 
 export default function Footer() {
+  const { user } = useAuth();
+  const router = useRouter();
+  const [email, setEmail] = useState("");
+  const [localSubscribed, setLocalSubscribed] = useState(false);
+  const [justSubscribed, setJustSubscribed] = useState(false);
+  const [subscribing, setSubscribing] = useState(false);
+  useEffect(() => { if (!user) setLocalSubscribed(isSubscribed()); }, [user]);
+  const subscribed = justSubscribed || (user ? !!user.newsletter : localSubscribed);
+  const { toast } = useToast();
   return (
     <footer className="border-t border-border mt-auto bg-white/50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
@@ -25,12 +41,26 @@ export default function Footer() {
             </ul>
           </div>
           <div>
-            <h3 className="text-sm font-semibold text-foreground mb-4 uppercase tracking-wider">Contact</h3>
-            <ul className="space-y-2.5 text-sm text-secondary">
-              <li>support@ebooklibrary.com</li>
-              <li>123 Library Street</li>
-              <li>Book City, BC 10001</li>
-            </ul>
+            <h3 className="text-sm font-semibold text-foreground uppercase tracking-wider mb-4">Newsletter</h3>
+            {subscribed ? (
+              <p className="text-sm text-success">You're subscribed! Stay tuned for updates.</p>
+            ) : (
+              <>
+                <p className="text-sm text-secondary mb-3">Get notified about new book releases and offers.</p>
+                <form onSubmit={(e) => { e.preventDefault(); if (subscribing || !email.trim()) return; if (!user) { router.push(`/auth/login?subscribe=true&email=${encodeURIComponent(email)}`); return; } setSubscribing(true); fetch("/api/newsletter/subscribe", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email }) }).then(res => { if (!res.ok) throw new Error(); setJustSubscribed(true); toast("success", "Subscribed to newsletter!"); setEmail(""); }).catch(() => toast("error", "Failed to subscribe. Try again.")).finally(() => setSubscribing(false)); }} className="flex gap-2">
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="your@email.com"
+                    className="input text-sm flex-1"
+                    required
+                    disabled={subscribing}
+                  />
+                  <button type="submit" disabled={subscribing} className="btn btn-primary btn-sm">{subscribing ? "Subscribing..." : "Subscribe"}</button>
+                </form>
+              </>
+            )}
           </div>
         </div>
         <div className="border-t border-border/60 mt-10 pt-6 flex flex-col sm:flex-row justify-between items-center gap-4">

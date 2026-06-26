@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 import { UserRole } from "@/lib/api";
@@ -11,10 +11,13 @@ export default function RegisterPage() {
   const [name, setName] = useState("");
   const [password, setPassword] = useState("");
   const [role, setRole] = useState<UserRole>("CUSTOMER");
+  const [subscribe, setSubscribe] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const { register } = useAuth();
   const router = useRouter();
+
+  useEffect(() => { document.title = "Register | E-Book Library"; }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -22,7 +25,7 @@ export default function RegisterPage() {
     setError(null);
 
     try {
-      await register(email, name, password, role);
+      await register(email, name, password, role, subscribe);
       router.push("/");
       router.refresh();
     } catch (err) {
@@ -124,6 +127,16 @@ export default function RegisterPage() {
                 </button>
               </div>
             </div>
+
+            <label className="flex items-center gap-3 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={subscribe}
+                onChange={(e) => setSubscribe(e.target.checked)}
+                className="w-4 h-4 rounded border-border text-primary focus:ring-primary"
+              />
+              <span className="text-sm text-secondary">Subscribe to our newsletter</span>
+            </label>
 
             <button
               type="submit"

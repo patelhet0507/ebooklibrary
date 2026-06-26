@@ -6,6 +6,7 @@ import { parseGenres } from "@/lib/utils";
 import Modal from "@/app/components/Modal";
 import ImageManager from "@/app/components/ImageManager";
 import ImageUpload from "@/app/components/ImageUpload";
+import EmptyState from "@/app/components/EmptyState";
 
 const COMMON_GENRES = [
   "Fiction", "Nonfiction", "Fantasy", "Science Fiction", "Mystery",
@@ -13,7 +14,10 @@ const COMMON_GENRES = [
   "Self-Help", "Business", "Technology", "Philosophy", "Poetry",
 ];
 
+const ITEMS_PER_PAGE = 10;
+
 export default function ModeratorBooks() {
+  useEffect(() => { document.title = "Manage Books | E-Book Library"; }, []);
   const [books, setBooks] = useState<Book[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -28,6 +32,7 @@ export default function ModeratorBooks() {
     language: data.language || undefined,
     genres: data.genres?.length ? data.genres : undefined,
     cover_image: data.cover_image || undefined,
+    content_url: data.content_url || undefined,
   });
 
   const [formData, setFormData] = useState<BookCreate>({
@@ -38,6 +43,7 @@ export default function ModeratorBooks() {
     language: "",
     genres: [],
     cover_image: "",
+    content_url: "",
     price: 0,
     rental_price_per_day: undefined,
     stock: 0,
@@ -45,11 +51,13 @@ export default function ModeratorBooks() {
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
   const [manageImagesBookId, setManageImagesBookId] = useState<string | null>(null);
   const [modalMessage, setModalMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const [page, setPage] = useState(1);
 
   const fetchBooks = async (query?: string) => {
     setLoading(true);
     const data = await api.moderator.getBooks({ search: query });
     setBooks(data);
+    setPage(1);
     setLoading(false);
   };
 
@@ -122,6 +130,7 @@ export default function ModeratorBooks() {
       language: book.language || "",
       genres: book.genre ? parseGenres(book.genre) : [],
       cover_image: book.cover_image || "",
+      content_url: book.content_url || "",
       price: book.price,
       rental_price_per_day: book.rental_price_per_day,
       stock: book.stock,
@@ -138,11 +147,15 @@ export default function ModeratorBooks() {
       language: "",
       genres: [],
       cover_image: "",
+      content_url: "",
       price: 0,
       rental_price_per_day: undefined,
       stock: 0,
     });
   };
+
+  const totalPages = Math.ceil(books.length / ITEMS_PER_PAGE);
+  const paginatedData = books.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE);
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 page-enter">
@@ -183,13 +196,15 @@ export default function ModeratorBooks() {
           <div className="spinner" />
         </div>
       ) : books.length === 0 ? (
-        <div className="card p-12 text-center">
-          <svg className="w-16 h-16 mx-auto text-muted mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-          </svg>
-          <h3 className="text-lg font-medium text-foreground mb-2">No books found</h3>
-          <p className="text-secondary">Try adjusting your search or add a new book.</p>
-        </div>
+        <EmptyState
+          icon={
+            <svg className="w-16 h-16 mx-auto text-muted mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+          }
+          title="No books found"
+          description="Try adjusting your search or add a new book."
+        />
       ) : (
         <div className="table-container">
           <table className="table">
@@ -205,7 +220,7 @@ export default function ModeratorBooks() {
               </tr>
             </thead>
             <tbody>
-              {books.map((book) => (
+              {paginatedData.map((book) => (
                 <tr key={book.id}>
                   <td className="font-medium">{book.title}</td>
                   <td className="text-secondary">{book.author}</td>
@@ -247,6 +262,30 @@ export default function ModeratorBooks() {
               ))}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between px-6 py-4 border-t border-border">
+          <p className="text-sm text-secondary">
+            Page {page} of {totalPages}
+          </p>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setPage(p => Math.max(1, p - 1))}
+              disabled={page === 1}
+              className="btn btn-outline btn-sm"
+            >
+              Previous
+            </button>
+            <button
+              onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+              disabled={page === totalPages}
+              className="btn btn-outline btn-sm"
+            >
+              Next
+            </button>
+          </div>
         </div>
       )}
 
@@ -387,6 +426,17 @@ export default function ModeratorBooks() {
               value={formData.cover_image || ""}
               onChange={(v) => setFormData({ ...formData, cover_image: v || undefined })}
             />
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-1">Book Content URL</label>
+              <input
+                type="url"
+                value={formData.content_url || ""}
+                onChange={(e) => setFormData({ ...formData, content_url: e.target.value || undefined })}
+                className="input"
+                placeholder="https://example.com/book.pdf"
+              />
+              <p className="text-xs text-muted mt-1">Link to the PDF or ePub file for the book</p>
+            </div>
             <div className="flex gap-3 pt-2">
               <button type="submit" className="btn btn-primary flex-1">
                 {showModal === "create" ? "Create Book" : "Save Changes"}

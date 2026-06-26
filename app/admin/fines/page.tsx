@@ -3,8 +3,10 @@
 import { useState, useEffect } from "react";
 import { api, Fine, FineStatus } from "@/lib/api";
 import Modal from "@/app/components/Modal";
+import EmptyState from "@/app/components/EmptyState";
 
 export default function ModeratorFines() {
+  useEffect(() => { document.title = "Manage Fines | E-Book Library"; }, []);
   const [fines, setFines] = useState<Fine[]>([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<FineStatus | "">("");
@@ -94,13 +96,15 @@ export default function ModeratorFines() {
           <div className="spinner" />
         </div>
       ) : fines.length === 0 ? (
-        <div className="card p-12 text-center">
-          <svg className="w-16 h-16 mx-auto text-muted mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-          <h3 className="text-lg font-medium text-foreground mb-2">No fines found</h3>
-          <p className="text-secondary">No fines match your current filter.</p>
-        </div>
+        <EmptyState
+          icon={
+            <svg className="w-16 h-16 mx-auto text-success mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          }
+          title="No fines found"
+          description="No fines match your current filter."
+        />
       ) : (
         <div className="table-container">
           <table className="table">

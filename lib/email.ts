@@ -102,6 +102,41 @@ export function sendDueDateReminder(customerEmail: string, customerName: string,
   );
 }
 
+export function sendNewsletterConfirmation(toEmail: string) {
+  sendEmail(
+    toEmail,
+    "Welcome to E-Book Library Newsletter!",
+    `<h2>Thank You for Subscribing! 📚</h2>
+     <p>You've successfully subscribed to the E-Book Library newsletter.</p>
+     <p>You'll now receive updates about new book releases, special offers, and more.</p>
+     <p>Happy reading!</p>
+     <p style="color:#888;font-size:12px;">If you didn't subscribe, you can ignore this email.</p>`
+  );
+}
+
+export function sendLoginNotification(userEmail: string, userName: string) {
+  sendEmail(
+    userEmail,
+    "New Login to Your E-Book Library Account",
+    `<h2>Hello ${userName},</h2>
+     <p>We noticed a new login to your account.</p>
+     <p>If this was you, no further action is needed. If you didn't log in recently, please change your password immediately.</p>
+     <p><small>This is an automated security notification.</small></p>`
+  );
+}
+
+export function sendWelcomeEmail(userEmail: string, userName: string) {
+  sendEmail(
+    userEmail,
+    "Welcome to E-Book Library!",
+    `<h2>Welcome, ${userName}! 🎉</h2>
+     <p>Thank you for creating an account with E-Book Library.</p>
+     <p>You can now browse, purchase, and rent thousands of books. Start building your digital library today!</p>
+     <p>Happy reading!</p>
+     <p style="color:#888;font-size:12px;">If you didn't create this account, please contact us.</p>`
+  );
+}
+
 export function sendNewReleaseNotification(customerEmail: string, customerName: string, bookTitle: string, author: string, price: number) {
   sendEmail(
     customerEmail,

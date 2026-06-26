@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import { useAuth } from "@/lib/auth-context";
 import CustomerDashboard from "@/app/components/dashboards/CustomerDashboard";
 import SellerDashboard from "@/app/components/dashboards/SellerDashboard";
@@ -7,6 +8,7 @@ import ModeratorDashboard from "@/app/components/dashboards/ModeratorDashboard";
 
 export default function DashboardPage() {
   const { user } = useAuth();
+  useEffect(() => { document.title = "Dashboard | E-Book Library"; }, []);
 
   if (!user) {
     return (

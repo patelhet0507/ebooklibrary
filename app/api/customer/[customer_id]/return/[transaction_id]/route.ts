@@ -7,9 +7,9 @@ export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ customer_id: string; transaction_id: string }> }
 ) {
-  return withAuth(async (session, req) => {
+  return withAuth(async (session) => {
     const { customer_id, transaction_id } = await params
-    if (session.userId !== customer_id) {
+    if (session.role !== "CUSTOMER" && session.userId !== customer_id) {
       return NextResponse.json({ detail: "Unauthorized" }, { status: 403 });
     }
 

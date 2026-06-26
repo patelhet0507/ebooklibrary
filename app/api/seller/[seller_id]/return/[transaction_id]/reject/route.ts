@@ -26,7 +26,7 @@ export async function POST(
       },
     })
     if (!transaction) return NextResponse.json({ detail: "Return request not found" }, { status: 404 })
-    const { reason } = await req.json()
+    const { reason } = await request.json()
     await prisma.transaction.update({
       where: { id: transaction_id },
       data: { return_requested_at: null },

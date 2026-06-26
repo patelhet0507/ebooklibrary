@@ -1,5 +1,15 @@
 import { prisma } from "@/lib/prisma"
-import { NextRequest, NextResponse } from "next/server"
+import { NextRequest } from "next/server"
+import { noCacheResponse } from "@/lib/cache"
+
+const BOOK_SEARCH_SELECT = {
+  id: true, title: true, author: true, slug: true, isbn: true,
+  description: true, language: true, genre: true, cover_image: true,
+  price: true, rental_price_per_day: true, stock: true, seller_id: true,
+  avg_rating: true, review_count: true, created_at: true,
+} as const
+
+const IMAGE_SELECT = { id: true, url: true, is_primary: true } as const
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams
@@ -10,8 +20,8 @@ export async function GET(request: NextRequest) {
   const maxPrice = searchParams.get("maxPrice")
   const minRating = searchParams.get("minRating")
   const genre = searchParams.get("genre")
-  const skip = parseInt(searchParams.get("skip") || "0")
-  const limit = parseInt(searchParams.get("limit") || "20")
+  const skip = Math.max(0, parseInt(searchParams.get("skip") || "0"))
+  const limit = Math.min(100, Math.max(1, parseInt(searchParams.get("limit") || "20")))
   const sortBy = searchParams.get("sortBy") || "relevance"
 
   const where: Record<string, unknown> = {}
@@ -20,7 +30,6 @@ export async function GET(request: NextRequest) {
     where.OR = [
       { title: { contains: query, mode: "insensitive" } },
       { author: { contains: query, mode: "insensitive" } },
-      { description: { contains: query, mode: "insensitive" } },
       { isbn: { contains: query, mode: "insensitive" } },
     ]
   }
@@ -28,7 +37,10 @@ export async function GET(request: NextRequest) {
   if (language) where.language = language
   if (genre) where.genre = { contains: genre, mode: "insensitive" }
   if (minPrice || maxPrice) {
-    where.price = { gte: minPrice ? parseFloat(minPrice) : undefined, lte: maxPrice ? parseFloat(maxPrice) : undefined }
+    where.price = {
+      gte: minPrice ? parseFloat(minPrice) : undefined,
+      lte: maxPrice ? parseFloat(maxPrice) : undefined,
+    }
   }
   if (minRating) where.avg_rating = { gte: parseFloat(minRating) }
 
@@ -47,11 +59,11 @@ export async function GET(request: NextRequest) {
       where,
       skip,
       take: limit,
-      include: { images: true },
+      select: { ...BOOK_SEARCH_SELECT, images: { select: IMAGE_SELECT } },
       orderBy,
     }),
     prisma.book.count({ where }),
   ])
 
-  return NextResponse.json({ books, total, skip, limit })
+  return noCacheResponse({ books, total, skip, limit })
 }

@@ -1,5 +1,15 @@
 import { prisma } from "@/lib/prisma";
 import type { NextRequest } from "next/server";
+import { noCacheResponse } from "@/lib/cache";
+
+const BOOK_LIST_SELECT = {
+  id: true, title: true, author: true, slug: true, isbn: true,
+  description: true, language: true, genre: true, cover_image: true,
+  price: true, rental_price_per_day: true, stock: true, seller_id: true,
+  avg_rating: true, review_count: true, created_at: true,
+} as const
+
+const IMAGE_SELECT = { id: true, url: true, is_primary: true } as const
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
@@ -19,12 +29,15 @@ export async function GET(request: NextRequest) {
   if (genre) where.genre = { contains: genre, mode: "insensitive" };
   if (language) where.language = language;
 
-  const books = await prisma.book.findMany({
-    where: where as any,
-    include: { images: true },
-    skip,
-    take: limit,
-    orderBy: { created_at: "desc" },
-  });
-  return Response.json(books);
+  const [books, total] = await Promise.all([
+    prisma.book.findMany({
+      where: where as any,
+      select: { ...BOOK_LIST_SELECT, images: { select: IMAGE_SELECT } },
+      skip,
+      take: limit,
+      orderBy: { created_at: "desc" },
+    }),
+    prisma.book.count({ where: where as any }),
+  ]);
+  return noCacheResponse({ books, total, skip, limit });
 }

@@ -8,6 +8,7 @@ import { api } from "@/lib/api";
 export default function ModeratorAnalytics() {
   const { user } = useAuth();
   const router = useRouter();
+  useEffect(() => { document.title = "Analytics | E-Book Library"; }, []);
   const [period, setPeriod] = useState<"day" | "week" | "month" | "year">("month");
   const [data, setData] = useState<any>(null);
   const [dashboard, setDashboard] = useState<any>(null);

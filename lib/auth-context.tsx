@@ -7,7 +7,7 @@ interface AuthContextType {
   user: User | null;
   setUser: (user: User | null) => void;
   login: (email: string, password: string) => Promise<void>;
-  register: (email: string, name: string, password: string, role: UserRole) => Promise<void>;
+  register: (email: string, name: string, password: string, role: UserRole, subscribe?: boolean) => Promise<void>;
   logout: () => Promise<void>;
   isLoading: boolean;
 }
@@ -49,11 +49,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(userData);
   };
 
-  const register = async (email: string, name: string, password: string, role: UserRole) => {
+  const register = async (email: string, name: string, password: string, role: UserRole, subscribe?: boolean) => {
     const res = await fetch("/api/auth/register", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, name, password, role }),
+      body: JSON.stringify({ email, name, password, role, newsletter: subscribe }),
     });
     if (!res.ok) {
       const error = await res.json();

@@ -1,16 +1,18 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 import { api, Book } from "@/lib/api";
 import { parseGenres } from "@/lib/utils";
 import Modal from "@/app/components/Modal";
+import EmptyState from "@/app/components/EmptyState";
 
 export default function CustomerBooks() {
   const { user } = useAuth();
   const router = useRouter();
+  useEffect(() => { document.title = "Browse Books | E-Book Library"; }, []);
   const [books, setBooks] = useState<Book[]>([]);
   const [totalBooks, setTotalBooks] = useState(0);
   const [availableGenres, setAvailableGenres] = useState<string[]>([]);
@@ -27,6 +29,10 @@ export default function CustomerBooks() {
   const [minRating, setMinRating] = useState(0);
   const [sortBy, setSortBy] = useState<"relevance" | "price_asc" | "price_desc" | "rating" | "newest" | "popular">("relevance");
   const [showFilters, setShowFilters] = useState(false);
+  const [suggestions, setSuggestions] = useState<Book[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [suggestionsLoading, setSuggestionsLoading] = useState(false);
+  const suggestionsRef = useRef<HTMLDivElement>(null);
 
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [rentModal, setRentModal] = useState<{ book: Book; days: number; total: number; dueDate: string } | null>(null);
@@ -54,11 +60,11 @@ export default function CustomerBooks() {
     });
   };
 
-  const fetchBooks = async () => {
+  const fetchBooks = async (searchOverride?: string) => {
     setLoading(true);
     try {
       const data = await api.books.search({
-        q: search || undefined,
+        q: (searchOverride ?? search) || undefined,
         genre: genreFilter || undefined,
         language: languageFilter || undefined,
         minPrice: minPrice ? parseFloat(minPrice) : undefined,
@@ -111,6 +117,47 @@ export default function CustomerBooks() {
     fetchBooks();
   }, [genreFilter, languageFilter, sortBy, minRating]);
 
+  // Autocomplete suggestions with debounce
+  useEffect(() => {
+    if (search.length < 2) {
+      setSuggestions([]);
+      setShowSuggestions(false);
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      setSuggestionsLoading(true);
+      setShowSuggestions(true);
+      try {
+        const data = await api.books.search({ q: search, limit: 5 });
+        setSuggestions(data.books);
+      } catch {
+        setSuggestions([]);
+      } finally {
+        setSuggestionsLoading(false);
+      }
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [search]);
+
+  // Click outside to close suggestions
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (suggestionsRef.current && !suggestionsRef.current.contains(e.target as Node)) {
+        setShowSuggestions(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const handleSuggestionClick = (book: Book) => {
+    setSearch(book.title);
+    setShowSuggestions(false);
+    fetchBooks(book.title);
+  };
+
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     fetchBooks();
@@ -140,7 +187,7 @@ export default function CustomerBooks() {
 
   const handlePurchase = async (bookId: string) => {
     if (!user) {
-      router.push("/auth/login");
+      router.push(`/checkout?book_id=${bookId}&type=buy`);
       return;
     }
     setActionLoading(bookId);
@@ -156,8 +203,9 @@ export default function CustomerBooks() {
   };
 
   const handleRent = async () => {
-    if (!user || !rentModal) {
-      router.push("/auth/login");
+    if (!rentModal) return;
+    if (!user) {
+      router.push(`/checkout?book_id=${rentModal.book.id}&type=rent&days=${rentModal.days}`);
       return;
     }
     const bookId = rentModal.book.id;
@@ -188,7 +236,7 @@ export default function CustomerBooks() {
       
       {/* ── Search & Filters ── */}
       <div className="mb-8">
-        <form onSubmit={handleSearch} className="flex gap-3">
+        <form onSubmit={handleSearch} className="flex gap-3 relative">
           <div className="relative flex-1">
             <svg className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -200,6 +248,33 @@ export default function CustomerBooks() {
               placeholder="Search by title, author, or ISBN..."
                className="input flex-1" style={{ paddingLeft: "3rem" }}
             />
+            {showSuggestions && (suggestions.length > 0 || suggestionsLoading) && (
+              <div
+                ref={suggestionsRef}
+                onMouseDown={(e) => e.stopPropagation()}
+                className="absolute left-0 right-0 top-full mt-1 z-50 card shadow-xl border border-border max-h-80 overflow-y-auto"
+              >
+                {suggestionsLoading ? (
+                  <div className="flex items-center justify-center py-4">
+                    <div className="spinner !w-5 !h-5 !border-2" />
+                  </div>
+                ) : (
+                  suggestions.map((book) => (
+                    <div
+                      key={book.id}
+                      onClick={() => handleSuggestionClick(book)}
+                      className="flex items-center gap-3 px-4 py-3 hover:bg-primary/5 cursor-pointer transition-colors border-b border-border/40 last:border-0"
+                    >
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-foreground truncate">{book.title}</p>
+                        <p className="text-xs text-secondary truncate">{book.author}</p>
+                      </div>
+                      <span className="text-sm font-semibold text-success whitespace-nowrap">₹{book.price.toFixed(2)}</span>
+                    </div>
+                  ))
+                )}
+              </div>
+            )}
           </div>
           <button type="button" onClick={() => setShowFilters(!showFilters)} className={`btn ${showFilters ? 'btn-primary' : 'btn-outline'}`}>
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -207,8 +282,8 @@ export default function CustomerBooks() {
             </svg>
             Filters
           </button>
-          <button type="submit" className="btn btn-primary">
-            Search
+          <button type="submit" disabled={loading} className="btn btn-primary">
+            {loading ? "Searching..." : "Search"}
           </button>
         </form>
 
@@ -327,15 +402,15 @@ export default function CustomerBooks() {
           <div className="spinner" />
         </div>
       ) : books.length === 0 ? (
-        <div className="card p-16 text-center">
-          <div className="w-20 h-20 mx-auto mb-6 rounded-2xl bg-primary/5 flex items-center justify-center">
-            <svg className="w-10 h-10 text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+        <EmptyState
+          icon={
+            <svg className="w-16 h-16 mx-auto text-muted mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
-          </div>
-          <h3 className="text-xl font-semibold text-foreground mb-2">No books found</h3>
-          <p className="text-secondary">Try adjusting your filters or search terms.</p>
-        </div>
+          }
+          title="No books found"
+          description="Try adjusting your search or filters."
+        />
       ) : (
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {books.map((book, index) => (

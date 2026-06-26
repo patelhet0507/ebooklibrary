@@ -3,6 +3,7 @@ import { config } from "@/lib/config"
 import { NextRequest, NextResponse } from "next/server"
 import { stringifyGenres } from "@/lib/utils"
 import { withAuth } from "@/lib/api-auth"
+import { cacheDel, cacheInvalidate } from "@/lib/cache"
 
 export async function PUT(
   request: NextRequest,
@@ -34,6 +35,10 @@ export async function PUT(
       include: { images: true },
     })
 
+    cacheDel(`book:${book_id}`)
+    cacheInvalidate("genres")
+    cacheInvalidate("languages")
+
     return NextResponse.json(book);
   }, request, ["MODERATOR"])
 }
@@ -45,6 +50,9 @@ export async function DELETE(
   return withAuth(async (session, req) => {
     const { book_id } = await params
     await prisma.book.delete({ where: { id: book_id } })
+    cacheDel(`book:${book_id}`)
+    cacheInvalidate("genres")
+    cacheInvalidate("languages")
     return new NextResponse(null, { status: 204 });
   }, request, ["MODERATOR"])
 }
